@@ -1,0 +1,243 @@
+#% text_encoding = iso8859_1
+##
+## File            : compare_filter.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Oct/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  compare_filter
+## '|Methods (Public)|:`
+##                  compare_filter.save_to_file()
+##                  compare_filter.new_from_file()
+##                  compare_filter.ignore_method?()
+##                  compare_filter.ignore_global?()
+##                  compare_filter.ignore_message_handler?()
+##                  compare_filter.xml_tag
+##                  compare_filter.xml_init()
+##                  compare_filter.xml_start()
+##                  compare_filter.xml_end()
+##                  compare_filter.xml_done()
+##                  compare_filter.xml_elements()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Filters the things that need comparing.
+##                 Self is created from an XML file.
+## Revision      : Oct/2009 (SL): Add message_handler_filters
+def_slotted_exemplar(:compare_filter,
+		     {
+			     {:global_filters,_unset},
+			     {:method_source_file_filters,_unset},
+			     {:message_handler_filters,_unset}
+		     })
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method compare_filter.save_to_file(p_filename)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_FILENAME: string
+	## Returns       : -
+	## Function      : Write self to a file
+	## Revision      :
+	simple_xml.write_document_file(p_filename, _self)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method compare_filter.new_from_file(p_filename)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_FILENAME: string
+	## Returns       : -
+	## Function      : Write self to a file
+	## Revision      :
+	_return simple_xml.read_document_file(p_filename, _unset, _self.exemplar)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_filter.ignore_method?(p_method, p_exemplar)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_METHOD
+	##                 P_EXEMPLAR
+	## Returns       : boolean
+	## Function      : Answer if the method should be ignored.
+	## Revision      : 
+	_if .method_source_file_filters _isnt _unset
+	_then
+		l_filename << p_method.source_file
+		_if l_filename _isnt _unset
+		_then
+			l_filename << l_filename.canonical
+			_for i_string _over .method_source_file_filters.fast_elements()
+			_loop
+				_if l_filename.matches?(i_string) _then _return _true _endif 
+			_endloop
+		_endif
+	_endif
+	_return _false 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_filter.ignore_global?(p_name, p_value)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_NAME 
+	##                 P_VALUE
+	## Returns       : boolean
+	## Function      : Answer if the global should be ignored.
+	## Revision      :
+	_if .global_filters _isnt _unset
+	_then
+		l_name << p_name.canonical
+		_for i_string _over .global_filters.fast_elements()
+		_loop
+			_if l_name.matches?(i_string) _then _return _true _endif 
+		_endloop
+	_endif
+	_return _false 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_filter.ignore_message_handler?(p_name, p_value)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : P_NAME 
+	##                 P_VALUE
+	## Returns       : boolean
+	## Function      : Answer if the message should be ignored.
+	## Revision      :
+	_if .message_handler_filters _isnt _unset
+	_then
+		l_name << p_name.canonical
+		_for i_string _over .message_handler_filters.fast_elements()
+		_loop
+			_if l_name.matches?(i_string) _then _return _true _endif 
+		_endloop
+	_endif
+	_return _false 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_filter.xml_tag
+	## 
+	## Returns the tag with which self is written to an XML file.
+	##
+	>> :compare_filter
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_filter.xml_init( _gather args )
+	## 
+	##
+	.global_filters << rope.new()
+	.method_source_file_filters << rope.new()
+	.message_handler_filters << rope.new()
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_filter.xml_start( tag, attributes )
+	## 
+	## Handles the start of a new sub-element.
+	## Creates simple_xml_things for each components.
+        ##
+	_if tag _is :compare_filter
+	_then
+		_return _self
+	_else
+		_return simple_xml_thing.new( tag, _unset, attributes )
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_filter.xml_end( p_element)
+	## 
+	## Handles the end of a new sub-element.
+	## Reads the filters
+        ##
+	_if p_element.xml_tag _is :global_filters
+	_then
+		_for i_element _over p_element.elements.fast_elements()
+		_loop
+			.global_filters.add(i_element.elements[1].canonical)
+		_endloop
+	_elif p_element.xml_tag _is :method_source_file_filters
+	_then
+		_for i_element _over p_element.elements.fast_elements()
+		_loop
+			.method_source_file_filters.add(i_element.elements[1].canonical)
+		_endloop 
+	_elif p_element.xml_tag _is :message_handler_filters
+	_then
+		_for i_element _over p_element.elements.fast_elements()
+		_loop
+			.message_handler_filters.add(i_element.elements[1].canonical)
+		_endloop 
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_filter.xml_done()
+	## 
+	## 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_iter _method compare_filter.xml_elements()
+	##
+	## Yields all the sub elements
+	##
+	l_nodes << rope.new()
+	
+	l_filters << rope.new()
+	_for i_string _over .global_filters.fast_elements()
+	_loop
+		l_filters.add(simple_xml_thing.new(:filter, {i_string}))
+	_endloop
+	l_xml << simple_xml_thing.new(:global_filters, l_filters )
+	l_nodes.add(l_xml)
+	
+	l_filters << rope.new()
+	_for i_string _over .method_source_file_filters.fast_elements()
+	_loop
+		l_filters.add(simple_xml_thing.new(:filter, {i_string}))
+	_endloop
+	l_xml << simple_xml_thing.new(:method_source_file_filters, l_filters )
+	l_nodes.add(l_xml)
+	
+	l_filters << rope.new()
+	_for i_string _over .message_handler_filters.fast_elements()
+	_loop
+		l_filters.add(simple_xml_thing.new(:filter, {i_string}))
+	_endloop
+	l_xml << simple_xml_thing.new(:message_handler_filters, l_filters )
+	l_nodes.add(l_xml)
+	
+	l_top << simple_xml_thing.new( _self.xml_tag, l_nodes )
+	_loopbody(l_top)
+_endmethod
+$
+

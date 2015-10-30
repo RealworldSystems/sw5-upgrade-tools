@@ -1,0 +1,505 @@
+#% text_encoding = iso8859_1
+##
+## File            : exemplar_compare_engine_master.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Apr/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  exemplar_compare_engine_master
+## '|Methods (Public)|:`
+##                  exemplar_compare_engine_master.run()
+## '|Methods (Private)|:`
+##                  exemplar_compare_engine_master.compare_shared_vars_and_const
+##                  exemplar_compare_engine_master.compare_methods()
+##                  exemplar_compare_engine_master.compare_constant()
+##                  exemplar_compare_engine_master.compare_method()
+##                  exemplar_compare_engine_master.compare_procedure()
+##                  exemplar_compare_engine_master.exemplar_available_at_slave?(
+##                  exemplar_compare_engine_master.compare_super_classes()
+##                  exemplar_compare_engine_master.compare_class_name()
+##                  exemplar_compare_engine_master.compare_slots()
+##                  exemplar_compare_engine_master.compare_slot()
+##                  exemplar_compare_engine_master.shake()
+# `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Master class that will compare
+##                 exemplars. This class will take the lead in
+##                 the comparing. 
+## Revision      : 
+def_slotted_exemplar(:exemplar_compare_engine_master,
+		     {
+			     {:result, _unset}  
+		     },
+		     :exemplar_compare_engine_base)
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_engine_master.run(p_name, p_exemplar)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_EXEMPLAR 
+	## Returns       : exemplar_compare_result or unset
+	## Function      : Compare the exemplar with the slave. First
+	##                 will check if the exemplar is actually
+	##                 available in the slave.
+	##                 If so then check the slots, the
+	##                 superclasses and the methods.
+	##                 Will return unset of the exemplar is totally
+	##                 missing. Otherwise results an exemplar_compare_result
+	## Revision      :
+	.exemplar << p_exemplar
+	_self.shake(:start_exemplar)
+	_if _self.exemplar_available_at_slave?(p_name)
+	_then
+		.result << exemplar_compare_result.new(p_name)
+		_self.compare_slots()
+		_self.compare_super_classes()
+		_self.compare_methods()
+		_self.compare_shared_vars_and_constants()
+	_else
+		.result << _unset 
+	_endif 
+	_self.shake(:end_exemplar)
+	_return .result
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_shared_vars_and_constants()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : -
+	## Returns       : -
+	## Function      : Compare the shared_constants/variables and
+	##                 sets the results in .results.
+	## Revision      : 
+	_self.shake(:start_constants)
+	l_constants << _self.all_shared_vars_and_constant_names()
+	_local l_constant_infos << rope.new()
+	
+	.connection.output.put_unsigned_short(l_constants.size)
+	_for i_name _over l_constants.fast_elements()
+	_loop
+		(l_same?, l_constant_info) << _self.compare_constant(i_name)
+
+		_if ~l_same?
+		_then
+			l_constant_infos.add(l_constant_info)
+		_endif
+	_endloop
+
+	_local l_giant_rope << _self.shake(:end_constants)
+	_local l_missing_in_master << _self.process_missing_info_from_slave(l_giant_rope)
+	l_constant_infos.add_all_last(l_missing_in_master)
+	
+	.result.method_compare_results.add_all_last(l_constant_infos)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_methods()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : -
+	## Returns       : -
+	## Function      : Compare the methods and
+	##                 sets the results in .results.
+	## Revision      :
+	_self.shake(:start_methods)
+	l_methods << _self.all_method_names()
+	_local l_method_infos << rope.new()
+	
+	.connection.output.put_unsigned_short(l_methods.size)
+	_for i_name _over l_methods.fast_elements()
+	_loop		
+		(l_same?, l_method_info) << _self.compare_method(i_name)
+
+		_if ~l_same? 
+		_then
+			l_method_infos.add(l_method_info)
+		_endif
+	_endloop
+
+	_local l_giant_rope << _self.shake(:end_methods)
+	_local l_missing_in_master << _self.process_missing_info_from_slave(l_giant_rope)
+	l_method_infos.add_all_last(l_missing_in_master)	
+	
+	.result.method_compare_results << l_method_infos
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_constant(p_name)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_NAME
+	## Returns       : boolean, boolean
+	## Function      : Compare the shared_constant (or
+	##                 variable). Answers if the constant was
+	##                 available at the slave and if it was, answers
+	##                 if it was the same value.
+	## Revision      :
+	_self.shake(:start_shared)
+	l_method << .exemplar.method(p_name)
+	.connection.output.roos_put_chars16(p_name)
+	l_same? << _false
+	
+	l_available? << .connection.input.roos_get_boolean()
+	_if l_available?
+	_then
+		.connection.output.put_signed_int(l_method.flags)
+		l_engine << value_compare_engine_master.new(.connection)
+		l_value << .exemplar.method(p_name).value
+		l_engine.compare_value(l_value )
+		l_same? << .connection.input.roos_get_boolean()
+	_endif
+
+	_local l_slave_info << _self.shake(:end_shared)
+	l_method_compare_result << method_compare_result.new(p_name)
+
+	_if ~l_same?
+	_then
+		_self.set_method_compare_result(l_method_compare_result, l_method, l_slave_info, _false)
+	_endif
+	
+	_return l_same?, l_method_compare_result
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_method(p_name)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_NAME
+	## Returns       : boolean, boolean
+	## Function      : Compare the method. Answers if the method was
+	##                 available at the slave and if it was, answers
+	##                 if it was the same.
+	## Revision      :
+	_self.shake(:start_method)
+	l_method << .exemplar.method(p_name)
+	.connection.output.roos_put_chars16(p_name)
+	l_same? << _false
+	l_available? << .connection.input.roos_get_boolean()	
+		
+	_if l_available?
+	_then
+		# Note here that we send everything and only at the end check
+		# the result. This is done because we assume that 99% of the
+		# methods will be the same anyway.
+		.connection.output.put_signed_int(l_method.flags)
+		l_force_ok? << _self.compare_procedure(l_method.value)
+		l_same? << .connection.input.roos_get_boolean()
+		l_same? << l_force_ok? _or l_same?
+	_endif
+	
+	_local l_slave_info << _self.shake(:end_method)
+	l_method_compare_result << method_compare_result.new(p_name)
+
+	_if ~l_same?
+	_then
+		_self.set_method_compare_result(l_method_compare_result, l_method, l_slave_info, _false)
+	_endif	
+	
+	_return l_same?, l_method_compare_result
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_engine_master.process_missing_info_from_slave(p_giant_rope)
+	#  Initial Author  : Stefan.Wagemans (REALWORLD), Date : 2011-09-13
+	## Parameters      : p_giant_rope, a rope
+	## Returns         : A rope containing method_compare_result objects
+	## Pre             : -
+	## Function        : Uses p_giant_rope to extract information
+	##                   about methods which exist in the slave
+	##                   image, but not in the master image.
+	##                   Creates a method_compare_result for each
+	##                   such missing method. These are returned in
+	##                   a rope.
+	## Post            : -
+
+	_local l_small_rope << rope.new()
+	_local l_missing_in_master << rope.new()
+
+	_for i _over p_giant_rope.fast_elements()
+	_loop
+		_if i = "NEXT"
+		_then
+			_if l_small_rope _isnt _unset _andif _not l_small_rope.empty?
+			_then
+				_local l_pl << _self.rope_to_pl(l_small_rope)			
+				_local l_method_compare_result << method_compare_result.new(l_pl[:method])
+				
+				_self.set_method_compare_result(l_method_compare_result, _unset, l_small_rope, _true )
+				l_missing_in_master.add_last(l_method_compare_result)
+			_endif
+			#start new
+			l_small_rope << rope.new()
+		_else
+			l_small_rope.add(i)
+		_endif
+	_endloop
+
+	_if l_small_rope _isnt _unset _andif _not l_small_rope.empty?
+	_then
+		_local l_pl << _self.rope_to_pl(l_small_rope)			
+		_local l_method_compare_result << method_compare_result.new(l_pl[:method])
+		
+		_self.set_method_compare_result(l_method_compare_result, _unset, l_small_rope, _true )
+		l_missing_in_master.add_last(l_method_compare_result)
+	_endif
+
+	_return l_missing_in_master
+_endmethod
+$
+
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_engine_master.set_method_compare_result(p_method_compare_result, p_method, p_slave_info_rope, p_slave_only?)
+	#  Initial Author  : Stefan.Wagemans (REALWORLD), Date : 2011-09-13
+	## Parameters      : p_method_compare_result, A method_compare_result
+	##                   p_method, The method object
+	##                   p_slave_info_rope, information about
+	##                     p_method in the slave image
+	##                   p_slave_only?, only process slave information?
+	## Returns         : -
+	## Pre             : -
+	## Function        : Sets slots in p_method_compare_result
+	##                   using information from the other parameters.
+	## Post            : -
+
+	_local l_slave_info << _self.rope_to_pl(p_slave_info_rope)
+
+	# If the method is missing in the master, then there is no
+	# information from the master on it. So skip.
+	_if ~p_slave_only?
+	_then
+		# Master part
+		p_method_compare_result.my_source_file << p_method.source_file
+		p_method_compare_result.me_private? << p_method.private?
+		p_method_compare_result.me_abstract? << p_method.abstract? 
+		p_method_compare_result.me_iter? << p_method.iter?
+		p_method_compare_result.me_missing? << _false
+		p_method_compare_result.method_exemplar << .exemplar
+		p_method_compare_result.me_shared_constant? << p_method.shared_constant?
+		p_method_compare_result.me_shared_variable? << p_method.shared_variable?
+	_else
+		p_method_compare_result.method_exemplar << l_slave_info[:method_exemplar]
+		p_method_compare_result.me_missing? << l_slave_info[:me_missing?]		
+	_endif	
+
+	# Slave part
+	p_method_compare_result.slave_source_file << l_slave_info[:slave_source_file]
+	p_method_compare_result.slave_private? << l_slave_info[:slave_private?]
+	p_method_compare_result.slave_abstract? << l_slave_info[:slave_abstract?]
+	p_method_compare_result.slave_iter? << l_slave_info[:slave_iter?]
+	p_method_compare_result.slave_missing? << l_slave_info[:slave_missing?]
+	p_method_compare_result.proc_or_value_different? << l_slave_info[:proc_or_value_different?]
+	p_method_compare_result.slave_shared_constant? << l_slave_info[:slave_shared_constant?]
+	p_method_compare_result.slave_shared_variable? << l_slave_info[:slave_shared_variable?]
+
+_endmethod
+$
+
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_engine_master.rope_to_pl(p_rope)
+	#  Initial Author  : stefan.wagemans (REALWORLD), Date : 2011-09-02
+	## Parameters      : p_rope: keys and value pairs in a rope
+	## Returns         : property_list
+	## Pre             : -
+	## Function        : Transform the rope into a property_list.
+	## Post            : -
+	_local l_counter << 1
+	_local l_pl << equality_property_list.new()
+	
+	_loop
+		_if l_counter > p_rope.size
+		_then
+			_leave 
+		_endif
+
+		_local l_key << p_rope[l_counter].as_symbol()
+		_local l_value << p_rope[(l_counter+1)]
+
+		_if l_value = "_false" _orif l_value = "false" _orif l_value = "False"
+		_then
+			l_value << _false
+		_elif l_value = "_true" _orif l_value = "true" _orif l_value = "True"
+		_then
+			l_value << _true
+		_elif l_key = :method_exemplar
+		_then
+			l_value << l_value.as_symbol()
+		_elif l_key = :method
+		_then
+			l_value << l_value.as_symbol()
+		_endif
+
+		l_pl[l_key] << l_value
+
+		l_counter +<< 2
+	_endloop
+
+	_return l_pl
+_endmethod
+$
+
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_procedure(p_proc)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_PROC
+	## Returns       : -
+	## Function      : send the literals and the code vector. Does
+	##                 not wait for responses.
+	## Revision      :
+	.connection.output.put_unsigned_short(p_proc.num_args)
+	.connection.output.put_unsigned_short(p_proc.num_mandatory_args)
+	.connection.output.roos_put_boolean(p_proc.gather_arg?)
+	l_force_ok? << _false 
+	l_count << p_proc.num_literals
+	.connection.output.put_unsigned_short(l_count)
+	l_value_engine << value_compare_engine_master.new(.connection)
+	_for i _over range(0, l_count-1)
+	_loop
+		l_lit << p_proc.literal(i)
+		l_value_engine.compare_value(l_lit )
+		_if l_lit.is_class_of?(procedure)
+		_then
+			l_force_ok? << _true 	
+		_endif
+	_endloop
+	
+	l_vec << p_proc.code_vector
+	l_count << l_vec.size
+	.connection.output.put_unsigned_short(l_count)
+	_for i _over range(0, l_count-1)
+	_loop
+		.connection.output.put_signed_short(l_vec.sys!at0(i))
+	_endloop
+	_return l_force_ok?
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.exemplar_available_at_slave?(p_name)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : -
+	## Returns       : boolean
+	## Function      : Check if the exemplar exists at the slave.
+	## Revision      :
+	.connection.output.roos_put_chars16(p_name)
+	l_ok? << .connection.input.roos_get_boolean()
+	_return l_ok?
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_super_classes()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Compare the super classes and
+	##                 sets the results in .results.
+	## Revision      : 
+	_self.shake(:start_classes)
+	l_data << _self.all_super_class_names()
+	
+	l_missing_slave_classes << rope.new()
+	.connection.output.put_unsigned_short(l_data.size)
+	_for i_name _over l_data.fast_elements()
+	_loop
+		l_available? << _self.compare_class_name(i_name)
+		_if _not l_available?
+		_then
+			l_missing_slave_classes.add(i_name)
+		_endif 
+	_endloop
+	l_my_missing_classes << _self.shake(:end_classes)
+	.result.my_missing_super_classes    << l_my_missing_classes
+	.result.slave_missing_super_classes << l_missing_slave_classes
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_class_name(p_string)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_STRING
+	## Returns       : boolean
+	## Function      : Check if the superclass is also superclass at the slave.
+	## Revision      : 
+	.connection.output.roos_put_chars16(p_string)
+	l_ok? << .connection.input.roos_get_boolean()
+	_return l_ok?
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_slots()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Compare the slots and
+	##                 sets the results in .results.
+	## Revision      : 
+	_self.shake(:start_slots)
+	l_data << _self.all_slot_names()
+	
+	l_missing_slave_slots << rope.new()
+	.connection.output.put_unsigned_short(l_data.size)
+	_for i_name _over l_data.fast_elements()
+	_loop
+		l_available? << _self.compare_slot(i_name)
+		_if _not l_available?
+		_then
+			l_missing_slave_slots.add(i_name)
+		_endif 
+	_endloop
+	l_my_missing_slots << _self.shake(:end_slots)
+	.result.my_missing_slots << l_my_missing_slots
+	.result.slave_missing_slots << l_missing_slave_slots
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.compare_slot(p_name)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_NAME: String
+	## Returns       : boolean
+	## Function      : Test if the slots is the same at the
+	##                 slave. Answer true if the slot was there.
+	## Revision      :
+	.connection.output.roos_put_chars16(p_name)
+	l_ok? << .connection.input.roos_get_boolean()
+	_return l_ok?
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_master.shake(p_what, _optional p_strings)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_WHAT: symbol
+	##                 P_STRINGS: list of string
+	## Returns       : -
+	## Function      : Wait for acknowledgement P_WHAT and shake on it.
+	##                 Sends P_STRINGS as an answer.
+	## Revision      :
+	_return compare_engine_master.!shake!(.connection, p_what, p_strings)
+_endmethod
+$
+

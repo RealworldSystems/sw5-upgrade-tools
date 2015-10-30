@@ -1,0 +1,118 @@
+#% text_encoding = iso8859_1
+##
+## File            : value_compare_engine_base.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Mar/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  value_compare_engine_base
+## '|Methods (Public)|:`
+##                  value_compare_engine_base.new()
+## '|Methods (Private)|:`
+##                  value_compare_engine_base.init()
+##                  value_compare_engine_base.stringify_value()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Base class of the engines that compare
+##                 global values. Provides common methods for
+##                 the mast and slave.
+## Revision      : 
+def_slotted_exemplar(:value_compare_engine_base,
+		     {
+			     {:connection, _unset}
+		     })
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method value_compare_engine_base.new(p_connection)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_CONNECTION
+	## Returns       : new engine
+	## Function      : Return a new engine.
+	## Revision      : 
+	_return _clone.init(p_connection)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method value_compare_engine_base.init(p_connection)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_CONNECTION
+	## Returns       : self
+	## Function      : Initialise slots
+	## Revision      : 
+	.connection << p_connection
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method value_compare_engine_base.stringify_value(p_value)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_VALUE
+	## Returns       : string
+	## Function      : Return a nice string version of P_VALUE.
+	## Revision      :
+	l_string << _unset
+	
+	_if p_value.is_class_of?(symbol) _andif
+	    (l_index << p_value.index_of_seq(:pseudo_slot!)) _isnt _unset
+	_then
+		_if p_value.index_of_seq(:|<<|) _isnt _unset
+		_then
+			l_string << write_string("set slot ", p_value.write_string.slice(l_index+12, p_value.size-2))
+		_else 
+			l_string << write_string( "get slot ", p_value.write_string.slice_to_end(l_index+12))
+		_endif 
+		_return l_string
+	_endif 
+	_try 
+		_if p_value.responds_to?( :|roos_stringify_value_for_compare()|)
+		_then
+			l_string << p_value.roos_stringify_value_for_compare(_self)
+		_elif p_value.responds_to?( :|store_on()|)
+		_then
+			l_stream << internal_text_output_stream.new()
+			p_value.store_on(l_stream)
+			l_string << l_stream.string
+		_endif
+	_when error
+	_endtry 
+	
+	_if l_string _is _unset
+	_then
+		_try 
+			l_string << p_value.write_string
+		_when error
+		_endtry
+	_endif
+	_if l_string _is _unset
+	_then
+		l_string << p_value.class_name
+	_endif
+	_if l_string.size >= 65536
+	_then
+		l_string << l_string.slice(1,65536-1)
+	_endif 
+	_return l_string
+_endmethod
+$
+

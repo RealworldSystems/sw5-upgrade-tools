@@ -1,0 +1,171 @@
+#% text_encoding = iso8859_1
+##
+## File            : roos_image_compare_dialog.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Apr/2009
+## Date changed    : Apr/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  roos_image_compare_dialog
+## '|Methods (Public)|:`
+##                  roos_image_compare_dialog.activate_in()
+##                  roos_image_compare_dialog.roos_activate_master_dialog()
+##                  roos_image_compare_dialog.roos_activate_slave_dialog()
+##                  roos_image_compare_dialog.on_deactivation()
+## '|Methods (Private)|:`
+##                  roos_image_compare_dialog.init()
+##                  roos_image_compare_dialog.roos_close_dialogs()
+## `Source Code'
+#&&
+#
+_package user
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Apr/2009
+## Class Purpose :  to initiate a compare between two images
+##                  and write a report about it.
+## Revision      : 
+def_slotted_exemplar(:roos_image_compare_dialog,
+		     {
+			     {:roos_dialogs, _unset}
+		     },
+		     {:model})
+$
+
+message_handler.new(:roos_image_compare_dialog).set_uses_list({:model})
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_dialog.init(_gather p_args)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_ARGS 
+	## Returns       : self
+	## Function      : Initialise slots.
+	## Revision      :
+	.roos_dialogs << property_list.new()
+	
+	_return _super.init(_scatter p_args)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_dialog.activate_in(p_container)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_CONTAINER
+	## Returns       : rowcol
+	## Function      : build the gui.
+	## Revision      :
+	l_b_width << _self.get_optional_resource(:min_button_width,:integer).default( 75 )
+	p_container.top_frame.resizable? << _false
+	p_container.top_frame.icon << smallworld_product.get_raster_image(:compare, _self.module_name )
+	
+	l_top_rc << rowcol.new(p_container, _unset, 1, :pixel, :style, :top_level)
+	l_b_rc << rowcol.new(l_top_rc, 1, _unset, :pixel, :style, :nested )
+	image_item.new( l_b_rc, smallworld_product.get_raster_image(:find, _self.module_name))
+	label_item.new( l_b_rc, _self.message( :top_info ))
+	panel_separator.new(l_top_rc, :vertical?, _false, :col_alignment, :fill )
+	l_b_rc << rowcol.new(l_top_rc, 1, _unset, :pixel, :style, :nested )
+	button_item.new_safe(l_b_rc, _self.message(:master_lbl),
+			_self, :|roos_activate_master_dialog()|,
+			:min_width, l_b_width)
+	
+	button_item.new_safe(l_b_rc, _self.message(:slave_lbl),
+			_self, :|roos_activate_slave_dialog()|,
+			:min_width, l_b_width )
+	
+	l_b_rc << rowcol.new(l_top_rc, 1, _unset, :pixel, :style, :nested, :col_alignment, :fill )
+	button_item.new(l_b_rc, _self.message(:close_lbl),
+			_self, :|close()|,
+			:min_width, l_b_width,
+			:col_alignment, :right )
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_dialog.roos_activate_master_dialog()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Activate or reactive the master dialog.
+	## Revision      : 
+	l_key << :master
+	l_dialog << .roos_dialogs[l_key]
+	_if l_dialog _is _unset
+	_then
+		l_dialog << roos_image_compare_master_dialog.new_dialog(_self)
+		l_dialog.activate_relative_to(_unset, .top_frame,
+					      .top_frame.width _div 2,
+					      .top_frame.height _div 2 )
+		.roos_dialogs[l_key] << l_dialog
+	_else
+		l_dialog.reactivate()
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_dialog.roos_activate_slave_dialog()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Activate or reactive the slave dialog.
+	## Revision      : 
+	l_key << :slave
+	l_dialog << .roos_dialogs[l_key]
+	_if l_dialog _is _unset
+	_then
+		l_dialog << roos_image_compare_slave_dialog.new_dialog(_self)
+		l_dialog.activate_relative_to(_unset, .top_frame,
+					      .top_frame.width _div 2,
+					      .top_frame.height _div 2 )
+		.roos_dialogs[l_key] << l_dialog
+	_else
+		l_dialog.reactivate()
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_dialog.on_deactivation()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : -
+	## Returns       : -
+	## Function      : Close the dialogs.
+	## Revision      : 
+	_self.roos_close_dialogs()
+	_return _super.on_deactivation()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_dialog.roos_close_dialogs()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Close any open dialogs.
+	## Revision      :
+	_if .roos_dialogs _is _unset 
+	_then
+		_return 
+	_endif
+	 
+	_for i_dialog _over .roos_dialogs.fast_elements()
+	_loop
+		i_dialog.quit()
+	_endloop
+	.roos_dialogs.empty()
+_endmethod
+$
+

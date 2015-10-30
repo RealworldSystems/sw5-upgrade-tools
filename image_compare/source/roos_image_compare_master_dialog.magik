@@ -1,0 +1,301 @@
+#% text_encoding = iso8859_1
+##
+## File            : roos_image_compare_master_dialog.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Apr/2009
+## Date changed    : Apr/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Shared Cons|:`
+##                  roos_image_compare_master_dialog.roos_default_hostname
+## '|Class Defs|:`
+##                  roos_image_compare_master_dialog
+## '|Methods (Public)|:`
+##                  roos_image_compare_master_dialog.activate_in()
+##                  roos_image_compare_master_dialog.roos_pick_report()
+##                  roos_image_compare_master_dialog.roos_picked_report()
+##                  roos_image_compare_master_dialog.on_activation()
+##                  roos_image_compare_master_dialog.on_deactivation()
+## '|Methods (Private)|:`
+##                  roos_image_compare_master_dialog.roos_build_params()
+##                  roos_image_compare_master_dialog.roos_set_visibility()
+##                  roos_image_compare_master_dialog.roos_verify_params()
+##                  roos_image_compare_master_dialog.open_connection()
+##                  roos_image_compare_master_dialog.roos!int_start_engine()
+# `Source Code'
+#&&
+#
+_package user
+$
+
+#remex(:roos_image_compare_master_dialog)
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Apr/2009
+## Class Purpose : GUI to start the master_compare engine. Will
+##                 report the differences. 
+## Revision      : 
+def_slotted_exemplar(:roos_image_compare_master_dialog,
+		     {
+			     {:last_compare_result, _unset }
+		     },
+		     {:roos_image_compare_base_dialog})
+$
+
+message_handler.new(:roos_image_compare_master_dialog).set_uses_list({:roos_image_compare_base_dialog})
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+roos_image_compare_master_dialog.define_shared_constant(
+	:roos_default_hostname, 
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Purpose       : Constant for the default hostname
+	## Revision      : 
+	"localhost",
+	:private)
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_master_dialog.activate_in(p_container)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_CONTAINER
+	## Returns       : rowcol
+	## Function      : build the gui.
+	## Revision      :
+	p_container.top_frame.resizable? << _false
+	p_container.top_frame.modality << :primary_modal
+	p_container.top_frame.icon << smallworld_product.get_raster_image(:compare_master, _self.module_name )
+	
+	l_top_rc << rowcol.new(p_container, _unset, 1, :pixel, :style, :top_level)
+	label_item.new( l_top_rc, _self.message( :top_info ))
+	
+	panel_separator.new(l_top_rc, :vertical?, _false, :col_alignment, :fill )
+	
+	_self.roos_build_params(l_top_rc)
+	
+	panel_separator.new(l_top_rc, :vertical?, _false, :col_alignment, :fill )
+	_self.roos_build_progress(l_top_rc)
+	_self.roos_build_buttons(l_top_rc)
+	
+	_return l_top_rc
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_master_dialog.roos_build_params(p_container)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_CONTAINER
+	## Returns       : 
+	## Function      : Build the parameters in the GUI
+	## Revision      : 
+	l_d_rc << rowcol.new(p_container, _unset, 2, :pixel, :style, :nested, :col_resize_values, {0,100} )
+	label_item.new( l_d_rc, _self.message(:host_lbl ) )
+	.roos_items[:host] << text_item.new( l_d_rc, _unset, :display_length, 12, :value, _self.roos_default_hostname )
+	
+	label_item.new( l_d_rc, _self.message(:port_lbl ) )
+	.roos_items[:port] << text_item.new( l_d_rc, _unset, :display_length, 7, :value, _self.roos_default_port_number.write_string )
+	
+	label_item.new( l_d_rc, _self.message(:filter_lbl ) )
+	l_f_rc << rowcol.new(l_d_rc, 1, _unset, :pixel, :style, :nested )
+	.roos_items[:filter] << text_item.new( l_f_rc, _unset, :display_length, 40,
+					       :Value, _self.roos_default_filter_file )
+	.roos_items[:filter_b] << image_button_item.new_safe( l_f_rc, smallworld_product.get_raster_image(:open, _self.module_name ),
+							      _self, :|roos_pick_filter()|)
+	label_item.new( l_d_rc, _self.message(:report_lbl ) )
+	
+	l_f_rc << rowcol.new(l_d_rc, 1, _unset, :pixel, :style, :nested )
+	.roos_items[:report] << text_item.new( l_f_rc, _unset, :display_length, 40 )
+	.roos_items[:report_b] << image_button_item.new_safe( l_f_rc, smallworld_product.get_raster_image(:open, _self.module_name ),
+							      _self, :|roos_pick_report()|)
+	
+	label_item.new( l_d_rc, _self.message(:report_format_lbl ) )	
+	.roos_items[:report_format] << text_choice_item.new(l_d_rc, _unset, :items, rope.new_with("CSV", "TXT"))
+
+	label_item.new( l_d_rc, _self.message(:compare_exemplars_lbl ) )	
+	.roos_items[:exemplars] << toggle_item.new(l_d_rc, _unset )
+
+	label_item.new( l_d_rc, _self.message(:compare_mixins_lbl ) )	
+	.roos_items[:mixins] << toggle_item.new(l_d_rc, _unset )
+
+	label_item.new( l_d_rc, _self.message(:compare_globals_lbl ) )	
+	.roos_items[:globals] << toggle_item.new(l_d_rc, _unset )
+
+	label_item.new( l_d_rc, _self.message(:compare_messages_lbl ) )	
+	.roos_items[:messages] << toggle_item.new(l_d_rc, _unset )
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_master_dialog.roos_pick_report()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Activate a dialog to pick a filename
+	## Revision      : 
+	file_dialog.new(_self, :|roos_picked_report()|, _unset,
+			:do_existence_check?, _false,
+			:do_creation_check?, _true 
+		    ).activate_relative_to(_self.message(:pick_report_title), _self.top_frame)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_master_dialog.roos_picked_report(p_filename)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_FILENAME: string
+	## Returns       : Callback method from the dialog when a filename was entered
+	## Function      : Sets the name in the text_item
+	## Revision      :
+	.roos_items[:report].value << p_filename
+	_self.roos_set_visibility()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_master_dialog.on_activation()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : sets the visibility of the items
+	## Revision      : 
+	_self.roos_set_visibility()
+	_self.roos_clear_progress()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_master_dialog.on_deactivation()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : stops the compare
+	## Revision      :
+	_self.roos_stop()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_master_dialog.roos_set_visibility()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : Sets the items enabled and disabled
+	##                 according to the settings.
+	## Revision      :
+	.roos_items[:host].enabled? << .roos_thread _is _unset
+	.roos_items[:port].enabled? << .roos_thread _is _unset
+	.roos_items[:filter].enabled? << .roos_thread _is _unset
+	.roos_items[:filter_b].enabled? << .roos_thread _is _unset
+	.roos_items[:report].enabled? << .roos_thread _is _unset
+	.roos_items[:report_b].enabled? << .roos_thread _is _unset
+	
+	.roos_items[:start].enabled? << .roos_thread _is _unset 
+	.roos_items[:stop].enabled? << .roos_thread _isnt _unset 
+	.roos_items[:close].enabled? << .roos_thread _is _unset 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_master_dialog.roos_verify_params()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : Verify if the parameters in the dialog are ok
+	## Revision      : 
+	l_host_string << .roos_items[:host].value
+	_try 
+		l_host << system.get_host_by_name(l_host_string)[1]
+	_when sw_net_lookup_failed
+	      _self.user_error( :no_valid_host )
+	_endtry
+	l_port_string << .roos_items[:port].value
+	l_port << l_port_string.as_number()
+	_if l_port _is _unset _orif
+	    l_port < 1 _orif
+	    l_port > 65535
+	_then
+		_self.user_error( :no_valid_port, _unset,  l_port_string)
+	_endif
+	l_filter_string << .roos_items[:filter].value
+	_if _not system.file_readable?(l_filter_string)
+	_then
+		_self.user_error( :filter_not_readable)
+	_endif
+	l_filter << roos_image_compare:compare_filter.new_from_file(l_filter_string)
+	l_report << .roos_items[:report].value
+	_if _not system.file_creatable?(l_report)
+	_then
+		_self.user_error( :report_not_creatable )
+	_endif
+	_return l_host, l_port, l_filter, l_report
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_master_dialog.open_connection(p_host, p_port)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_HOST: byte_vector
+	##                 P_PORT: number
+	## Returns       : tcpip_connection
+	## Function      : Open a TCPip connection
+	## Revision      :
+	_try 
+		l_con << tcpip_connection.new(p_host, p_port)
+	_when sw_net_connection_failed
+	      _self.user_error( :slave_not_listening )
+	_endtry 
+	_return l_con
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_master_dialog.roos!int_start_engine(p_host, p_port, p_filter, p_report)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Start the engine and report the results.
+	## Revision      :
+	_local l_con << _self.open_connection(p_host, p_port)
+	_protect
+		_self.roos_info_string << _self.message(:engine_starts)
+
+		_local l_pl << equality_property_list.new_with(:exemplars, .roos_items[:exemplars].value,
+							       :mixins, .roos_items[:mixins].value,
+							       :globals, .roos_items[:globals].value,
+							       :messages, .roos_items[:messages].value)
+	
+		.roos_engine << roos_image_compare:compare_engine_master.new(l_con,p_filter, l_pl)
+		.roos_engine.add_dependent(_self)
+		l_result << .roos_engine.run()
+
+		.last_compare_result << l_result
+		_self.roos_info_string << _self.message(:writing_report)
+
+		_if .roos_items[:report_format].value = "CSV"
+		_then
+			l_writer << roos_image_compare:compare_result_csv_writer.new(l_result)
+			l_writer.write_report(p_report)
+		_elif .roos_items[:report_format].value = "TXT"
+		_then
+			l_writer << roos_image_compare:compare_result_text_writer.new(l_result)
+			l_writer.write_report(p_report)
+		_endif 
+		
+		_self.roos_info_string << _self.message(:report_end)
+	_protection
+		.roos_engine.remove_dependent(_self)
+		l_con.close()
+	_endprotect
+_endmethod
+$
+

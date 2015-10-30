@@ -1,0 +1,29 @@
+#% text_encoding = iso8859_1
+##
+## File            : condition.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Sep/2009
+## Date changed    : Sep/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Conditions|:`
+##                  sw_net_connection_failed
+## `Source Code'
+#&&
+#
+_package user
+$
+
+condition.define_condition(:sw_net_connection_failed, :error, {} )
+$
+

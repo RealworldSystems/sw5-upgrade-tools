@@ -1,0 +1,77 @@
+#% text_encoding = iso8859_1
+##
+## File            : image_compare_result.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Oct/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  image_compare_result
+## '|Methods (Public)|:`
+##                  image_compare_result.new()
+## '|Methods (Private)|:`
+##                  image_compare_result.init()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remove_exemplar(:image_compare_result)
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : The result of comparing two images.
+## Revision      : 
+def_slotted_exemplar(:image_compare_result,
+		     {
+			     {:my_image_description, _unset, :writable},
+			     {:slave_image_description, _unset, :writable},
+			     {:my_missing_exemplars, _unset, :writable},
+			     {:slave_missing_exemplars, _unset, :writable},
+			     {:exemplar_differences, _unset, :writable},
+			     {:my_missing_mixins, _unset, :writable},
+			     {:slave_missing_mixins, _unset, :writable},
+			     {:mixin_differences, _unset, :writable},
+			     {:my_missing_globals, _unset, :writable},
+			     {:slave_missing_globals, _unset, :writable},
+			     {:global_differences, _unset, :writable},
+			     {:my_missing_message_handlers, _unset, :writable},
+			     {:slave_missing_message_handlers, _unset, :writable},
+			     {:message_handler_differences, _unset, :writable}
+		     })
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method image_compare_result.new()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : 
+	## Revision      :
+	_return _clone.init()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method image_compare_result.init()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : 
+	## Revision      : 
+	_return _self 
+_endmethod
+$
+

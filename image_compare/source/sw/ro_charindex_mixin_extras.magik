@@ -1,0 +1,54 @@
+##
+## File            : $File: (ro_charindex_mixin_extras.magik) $
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2011-09-21
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_smallworld})
+_method ro_charindex_mixin.roos_find_and_replace_all(p_find,p_replacement)
+	# Author         : Realworld OO Systems; Date: 6/1996
+	##                 Taken from realworld module "initial".
+	## Parameters    : p_find: substring to find
+	##                 p_replacement: replace by
+	## Returns       : self with all occurrences of p_find replaced
+	## Function      : Replace all occurences of p_find within self
+	##                 by p_replacement
+	## Revision      : Added empty string test on p_find,
+	##                 preventing infinite looping.
+	_if p_find = ""
+	_then
+		_return _self 
+	_endif
+	l_str  << _self
+	l_res  << internal_text_output_stream.new() # faster than using +!
+	l_size << p_find.size
+	_loop
+		_if (l_index << l_str.index_of_seq(p_find)) _is _unset
+		_then
+			_leave
+		_endif
+		l_res.write(l_str.subseq(1,l_index-1),p_replacement)
+		
+		_if l_str.size >= l_size
+		_then
+			l_str << l_str.subseq(l_index+l_size)
+		_endif 
+	_endloop
+	l_res.write(l_str)
+	_return l_res.string
+_endmethod
+$

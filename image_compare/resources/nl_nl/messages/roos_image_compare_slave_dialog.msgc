@@ -1,0 +1,7 @@
+MSGCfilter_not_readableHet opgegeven bestand voor de filter is niet te lezen.report_lblRapportstart_lblStartroos_image_compare_slave_dialogVergelijk Images (Ontvanger)communication_was_interruptedDe communicatie werd onderbroken.stop_lblStopstart_ttStart de vergelijking. Dit kan enkele minuten duren.port_lblPoortfilter_lblFilterwaiting_for_connectionWachten op verbinding.....pick_filter_titleKies het filter voor de vergelijking:readyDruk op Start om te beginnenclose_lblSluitstop_ttOnderbreek de actie. Er wordt geen rapport gemaakt.host_lblHosttop_infoVul de poort in waar deze Ontvanger gaat luisteren naar de Zender. Gebruik
+geen standaard poortnummer (1-1023), om problemen te voorkomen.
+
+Zorg ervoor dat hetzelfde filter bestand wordt gebruikt voor Zender
+als Onvanger, anders kan het resultaat verwarrend zijn.
+
+Start eerst deze Ontvanger, dan de Zender.no_valid_hostDe opgegeven Host naam kan niet worden gevonden

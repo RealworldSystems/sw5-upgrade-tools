@@ -1,0 +1,188 @@
+#% text_encoding = iso8859_1
+##
+## File            : message_handler_compare_engine_slave.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Oct/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  message_handler_compare_engine_slave
+## '|Methods (Public)|:`
+##                  message_handler_compare_engine_slave.run()
+## '|Methods (Private)|:`
+##                  message_handler_compare_engine_slave.compare_messages()
+##                  message_handler_compare_engine_slave.compare_message()
+##                  message_handler_compare_engine_slave.compare_languages()
+##                  message_handler_compare_engine_slave.message_handler_availab
+##                  message_handler_compare_engine_slave.shake()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (SL); Date: Oct/2009
+## Class Purpose : Slave class that will compare
+##                 message_handlers. This class will respond to
+##                 questions of the master.
+## Revision      : 
+def_slotted_exemplar(:message_handler_compare_engine_slave,
+		     {},
+		     :message_handler_compare_engine_base)
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method message_handler_compare_engine_slave.run(p_all_message_handlers)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : P_ALL_MESSAGE_HANDLERS: equality_hash_table
+	## Returns       : boolean, symbol, message_handler
+	## Function      : Read the message_handler from the connection and
+	##                 compares it with the master.
+	##                 Answer if the message_handler was available, what
+	##                 the requested name was and the message_handler in
+	##                 this image.
+	## Revision      :
+	.message_handler << _unset 
+	_self.shake(:start_message_handler)
+	(l_available?, l_name) << _self.message_handler_available?(p_all_message_handlers)
+	_if l_available?
+	_then
+		_self.compare_messages()
+	_endif 
+	_self.shake(:end_message_handler)
+	_return l_available?, l_name, .message_handler
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_slave.compare_messages()
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : -
+	## Returns       : -
+	## Function      : Read the messages from the master
+	##                 and compare them. Answer to the master which
+	##                 messages it missed.
+	## Revision      : 
+	_self.shake(:start_messages)
+	
+	l_all_messages << _self.all_message_names()
+	
+	l_count << .connection.input.get_unsigned_short()	
+	_over range(1, l_count)
+	_loop
+		(l_available?, l_name) << _self.compare_message(l_all_messages)
+		_if l_available?
+		_then
+			l_all_messages.remove(l_name)
+		_endif 
+	_endloop
+	
+	l_missing_messages << rope.new_from(l_all_messages)
+	_self.shake(:end_messages, l_missing_messages)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_slave.compare_message(p_all_messages)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : P_ALL_MESSAGES
+	## Returns       : boolean, symbol
+	## Function      : Read a message from the master and check if
+	##                 we have it too. Then check if the
+	##                 languages are the same.
+	##                 Return if the message was available and
+	##                 what the name was.
+	## Revision      : 
+	_self.shake(:start_message)
+	
+	l_message << .connection.input.roos_get_chars16().as_symbol()
+	l_available? << p_all_messages.includes?(l_message)
+	.connection.output.roos_put_boolean(l_available?)
+	
+	_if l_available?
+	_then
+		# Note that we receive all information first and then only
+		# answer.
+		_self.compare_languages(l_message)
+	_endif
+	
+	_self.shake(:end_message)
+	
+	_return l_available?, l_message
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_slave.compare_languages(p_name)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : P_NAME
+	## Returns       : boolean, symbol
+	## Function      : Compare all the languages for this message.
+	##                 Return if all the languages were
+	##                 available and the same.
+	## Revision      : 
+	l_languages << _self.all_message_languages(p_name)
+	
+	_self.shake(:start_languages)
+	
+	l_count << .connection.input.get_unsigned_short()
+	_over range(1, l_count)
+	_loop
+		l_language << .connection.input.roos_get_chars16().as_symbol()
+		l_available? << l_languages.includes?(l_language)
+		.connection.output.roos_put_boolean(l_available?)
+		
+		_if l_available?
+		_then
+			l_engine << value_compare_engine_slave.new(.connection)
+			l_value << _self.get_message_translation(p_name, l_language)
+			l_same? << l_engine.compare_value(l_value)
+			.connection.output.roos_put_boolean(l_same?)
+			l_languages.remove(l_language)
+		_endif
+	_endloop
+	_self.shake(:end_languages, l_languages)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_slave.message_handler_available?(p_all_message_handlers)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_ALL_MESSAGE_HANDLERS: equality_hash_table
+	## Returns       : boolean, string
+	## Function      : Check if the given message_handler is available.
+	##                 Return if it was and return the name that
+	##                 was required.
+	## Revision      : 
+	l_qual_name << .connection.input.roos_get_chars16()
+	l_available? << p_all_message_handlers.includes_key?(l_qual_name)
+	.message_handler << p_all_message_handlers[l_qual_name]
+	.connection.output.roos_put_boolean(l_available?)
+	_return l_available?, l_qual_name
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_slave.shake(p_what, _optional p_strings)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_WHAT: symbol
+	##                 P_STRINGS: list of string
+	## Returns       : -
+	## Function      : Wait for acknowledgement P_WHAT and shake on it.
+	##                 Sends P_STRINGS as an answer.
+	## Revision      :
+	compare_engine_slave.!shake!(.connection, p_what, p_strings)
+_endmethod
+$
+

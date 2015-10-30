@@ -1,0 +1,78 @@
+#% text_encoding = iso8859_1
+##
+## File            : value_compare_engine_master.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Mar/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  value_compare_engine_master
+## '|Methods (Public)|:`
+##                  value_compare_engine_master.run()
+##                  value_compare_engine_master.compare_value()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Compares (global) values with a remote
+##                 slave. Self will initiate the actions.
+## Revision      : 
+def_slotted_exemplar(:value_compare_engine_master,
+		     {},
+		     :value_compare_engine_base)
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method value_compare_engine_master.run(p_value_name, p_value)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_VALUE_NAME: symbol
+	##                 P_VALUE: the global value
+	## Returns       : boolean, boolean
+	## Function      : Check with the slave if the global
+	##                 P_VALUE_NAME is still the same.
+	##                 Answers if the global was available and if
+	##                 it was the same.
+	## Revision      :
+	.connection.output.roos_put_chars16(p_value_name)
+	l_available? << .connection.input.roos_get_boolean()
+	_if l_available?
+	_then
+		l_same? << _self.compare_value(p_value)
+	_else
+		l_same? << _false 
+	_endif
+	_return l_available?, l_same?
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method value_compare_engine_master.compare_value(p_any)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_ANY
+	## Returns       : boolean
+	## Function      : Compare the value with the
+	##                 value in the slave.
+	##                 Answers if the values are the same.
+	## Revision      :
+	l_string << _super.stringify_value(p_any)
+	.connection.output.roos_put_chars16(l_string)
+	l_same? << .connection.input.roos_get_boolean()
+	_return l_same?
+_endmethod
+$
+

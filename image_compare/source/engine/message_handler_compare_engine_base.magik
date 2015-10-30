@@ -1,0 +1,127 @@
+#% text_encoding = iso8859_1
+##
+## File            : message_handler_compare_engine_base.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Oct/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Shared Cons|:`
+##                  message_handler_compare_engine_base.languages
+## '|Class Defs|:`
+##                  message_handler_compare_engine_base
+## '|Methods (Public)|:`
+##                  message_handler_compare_engine_base.new()
+## '|Methods (Private)|:`
+##                  message_handler_compare_engine_base.init()
+##                  message_handler_compare_engine_base.all_message_names()
+##                  message_handler_compare_engine_base.all_message_languages()
+##                  message_handler_compare_engine_base.get_message_translation(
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remex(:message_handler_compare_engine_base)
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Base class of the classes that will compare
+##                 message_handlers. Provides common methods for
+##                 both the mast and slave.
+## Revision      : 
+def_slotted_exemplar(:message_handler_compare_engine_base,
+		     {
+			     {:connection, _unset},
+			     {:filter,_unset},
+			     {:message_handler,_unset}
+		     })
+$
+
+message_handler_compare_engine_base.define_shared_constant(:languages,
+							   {:en_gb, :nl_nl},
+							   :private
+				    )
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method message_handler_compare_engine_base.new(p_connection, p_filter)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_CONNECTION: tcpip_connection
+	##                 P_FILTER
+	## Returns       : engine
+	## Function      : Create a new engine ready to compare message_handlers.
+	## Revision      : 
+	_return _clone.init(p_connection, p_filter)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_base.init(p_connection, p_filter)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_CONNECTION: tcpip_connection
+	##                 P_FILTER
+	## Returns       : self
+	## Function      : Initialise slots
+	## Revision      :
+	.connection << p_connection
+	.filter << p_filter
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_base.all_message_names()
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : 
+	## Returns       : rope of symbols
+	## Function      : Return the message names
+	## Revision      :
+	_return .message_handler.known_messages(_true, :all)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_base.all_message_languages(p_message)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : 
+	## Returns       : returns the languages available for this
+	##                 message, in a rope
+	## Function      : Return the languages available for this message
+	## Revision      :
+	l_languages << rope.new()
+	
+	_for i_language _over _self.languages.fast_elements()
+	_loop
+		l_translation << .message_handler.local_at(p_message, i_language)
+		_if l_translation _isnt _unset
+		_then
+			l_languages.add(i_language)
+		_endif
+	_endloop
+	_return l_languages
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_engine_base.get_message_translation(p_message, p_language)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : 
+	## Returns       : returns the translation for this message in language
+	## Function      : Return the translation for this message in language
+	## Revision      :
+	_return .message_handler.local_at(p_message, p_language)
+_endmethod
+$
+

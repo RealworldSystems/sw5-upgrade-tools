@@ -1,0 +1,8 @@
+MSGCport_lblPoortcompare_globals_lblVergelijk Globalenfilter_not_readableHet opgegeven bestand voor de filter is niet te lezen.roos_image_compare_master_dialogVergelijk Images (Zender)compare_mixins_lblVergelijk Mixinsslave_not_listeningDe Ontvanger is niet aan het luisteren op de opgegeven poort.#nStart eerst de Ontvanger.readyDruk op Start om te beginnenreport_format_lblRapport formaattop_infoVul de poort en de host in waar de Ontvanger op luistert. Bij host kan de naam
+of ip-nummer van de machine worden gebruikt. Gebruik 'localhost' voor
+de huidige machine.
+
+Zorg ervoor dat hetzelfde filter bestand wordt gebruikt voor Zender
+als Onvanger, anders kan het resultaat verwarrend zijn.
+
+Start eerst de Ontvanger.start_ttStart de vergelijking. Dit kan enkele minuten duren.writing_reportRapportage wordt geschreven...host_lblHostcompare_exemplars_lblVergelijk Exemplarspick_report_titleKies een bestandnaam voor het rapportstart_lblStartpick_filter_titleKies het filter voor de vergelijking:report_endRapportage is gereed.compare_messages_lblVergelijk Message Handlersreport_not_creatableHet opgegeven bestand voor de rapportage is niet aan te maken.close_lblSluitstop_lblStopcommunication_was_interruptedDe communicatie werd onderbroken.no_valid_hostDe opgegeven Host naam kan niet worden gevondenfilter_lblFilterstop_ttOnderbreek de actie. Er wordt geen rapport gemaakt.report_lblRapport

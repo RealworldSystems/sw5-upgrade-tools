@@ -1,0 +1,60 @@
+#% text_encoding = iso8859_1
+##
+## File            : external_binary_output_stream_extras.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Mar/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Methods (Public)|:`
+##                  external_binary_output_stream.roos_put_chars16()
+##                  external_binary_output_stream.roos_put_boolean()
+## `Source Code'
+#&&
+#
+_package user
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method external_binary_output_stream.roos_put_chars16(p_string)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_STRING: a string
+	## Returns       : -
+	## Function      : Write a string.
+	## Revision      :
+	_if p_string.size >= 65536 _then condition.raise(:error, :string, "String is too long!") _endif
+	
+	l_string << "".check_type(p_string)
+	_self.put_unsigned_short(l_string.size)
+	_if _not l_string.empty?
+	_then 
+		_self.put_subseq(l_string)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method external_binary_output_stream.roos_put_boolean(p_bool)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_BOOL
+	## Returns       : -
+	## Function      : Writes a boolean
+	## Revision      :
+	l_byte << _if p_bool
+		  _then >> 1
+		  _else >> 0
+		  _endif 
+	_return _self.put_unsigned_byte(l_byte)
+_endmethod
+$
+

@@ -1,0 +1,153 @@
+#% text_encoding = iso8859_1
+##
+## File            : message_handler_compare_result.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Oct/2009
+## Date changed    : Oct/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  message_handler_compare_result
+## '|Methods (Public)|:`
+##                  message_handler_compare_result.new()
+##                  message_handler_compare_result.different?
+##                  message_handler_compare_result.show_on()
+##                  message_handler_compare_result.print_on()
+## '|Methods (Private)|:`
+##                  message_handler_compare_result.init()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remove_exemplar(:message_handler_compare_result)
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (SL); Date: Oct/2009
+## Class Purpose : Holder of the differences between two message_handlers
+## Revision      : 
+def_slotted_exemplar(:message_handler_compare_result,
+		     {
+			     {:message_handler,_unset,:readable},
+			     {:my_missing_messages,_unset,:writable},
+			     {:slave_missing_messages,_unset,:writable},
+			     {:my_missing_languages,_unset,:writable},
+			     {:slave_missing_languages,_unset,:writable},
+			     {:translation_differences,_unset,:writable}
+		     })
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method message_handler_compare_result.new(p_message_handler_name)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : -
+	## Returns       : -
+	## Function      : Return a new result object.
+	## Revision      : 
+	_return _clone.init(p_message_handler_name)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method message_handler_compare_result.init(p_message_handler_name)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : P_MESSAGE_HANDLER
+	## Returns       : self
+	## Function      : Initialise slots.
+	## Revision      : 
+	.message_handler << p_message_handler_name
+	.my_missing_languages << hash_table.new()
+	.slave_missing_languages << hash_table.new()
+	.translation_differences << hash_table.new()
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method message_handler_compare_result.different?
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : boolean
+	## Function      : Answer if there are any differences
+	## Revision      : 
+	_if .my_missing_messages _isnt _unset _andif _not .my_missing_messages.empty? _then _return _true _endif
+	_if .slave_missing_messages _isnt _unset _andif _not .slave_missing_messages.empty? _then _return _true _endif
+	_if .my_missing_languages _isnt _unset _andif _not .my_missing_languages.empty? _then _return _true _endif
+	_if .slave_missing_languages _isnt _unset _andif _not .slave_missing_languages.empty? _then _return _true _endif
+	_if .translation_differences _isnt _unset _andif _not .translation_differences.empty? _then _return _true _endif
+	_return _false 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method message_handler_compare_result.show_on(p_stream)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_STREAM
+	## Returns       : 
+	## Function      : write info of self to the stream
+	## Revision      : 
+	_if .message_handler _isnt _unset
+	_then
+		p_stream.write(_self.class_name, " (")
+		.message_handler.show_on(p_stream)
+		p_stream.write(")")
+	_else
+		_super.show_on(p_stream)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method message_handler_compare_result.print_on(p_stream)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_STREAM: 
+	## Returns       : 
+	## Function      : print self on a stream.
+	## Revision      : 
+	p_stream.write(_self.class_name, ":", .message_handler)
+	p_stream.newline()
+	
+	_if .my_missing_messages _isnt _unset
+	_then
+		p_stream.write("my_missing_messages")
+		p_stream.newline()
+		.my_missing_messages.print_on(p_stream)
+	_endif
+	_if .slave_missing_messages _isnt _unset
+	_then
+		p_stream.write("slave_missing_messages")
+		p_stream.newline()
+		.slave_missing_messages.print_on(p_stream)
+	_endif
+	_if .my_missing_languages _isnt _unset
+	_then
+		p_stream.write("my_missing_languages")
+		p_stream.newline()
+		.my_missing_languages.print_on(p_stream)
+	_endif
+	_if .slave_missing_languages _isnt _unset
+	_then
+		p_stream.write("slave_missing_languages")
+		p_stream.newline()
+		.slave_missing_languages.print_on(p_stream)
+	_endif
+	_if .translation_differences _isnt _unset
+	_then
+		p_stream.write("translation_differences")
+		p_stream.newline()
+		.translation_differences.print_on(p_stream)
+	_endif
+_endmethod
+$
+

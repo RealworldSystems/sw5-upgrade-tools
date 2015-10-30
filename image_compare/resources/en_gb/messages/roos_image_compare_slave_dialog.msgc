@@ -1,0 +1,7 @@
+MSGCfilter_not_readableThe filter filename can not be read.report_lblReportstart_lblStartroos_image_compare_slave_dialogCompare Images (Receiver)communication_was_interruptedommunication is interrupted.stop_lblStopstart_ttStart the comparison. This may take several minutes.port_lblPortfilter_lblFilterwaiting_for_connectionWaiting for connection.....pick_filter_titlePick the filter for comparing:readyPress Start to beginclose_lblClosestop_ttInterrupt the action. No report is made.host_lblHosttop_infoEnter the port the Receiver is listening to the Sender. Do not
+use a standard port (1-1023) to avoid problems.
+
+Make sure the Sender and Receiver use the same filter file. Otherwise
+the result could be confusing.
+
+First start the Receiver.no_valid_hostThe Host name van not be found

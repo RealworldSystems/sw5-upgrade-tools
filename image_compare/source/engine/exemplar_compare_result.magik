@@ -1,0 +1,154 @@
+#% text_encoding = iso8859_1
+##
+## File            : exemplar_compare_result.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Mar/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  exemplar_compare_result
+## '|Methods (Public)|:`
+##                  exemplar_compare_result.new()
+##                  exemplar_compare_result.different?
+##                  exemplar_compare_result.show_on()
+##                  exemplar_compare_result.print_on()
+## '|Methods (Private)|:`
+##                  exemplar_compare_result.init()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remex(:exemplar_compare_result)
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Holder of the differences between two exemplars
+## Revision      : 
+def_slotted_exemplar(:exemplar_compare_result,
+		     {
+			     {:exemplar,_unset,:readable},
+			     {:my_missing_slots,_unset, :writable},
+			     {:slave_missing_slots,_unset, :writable},
+			     {:my_missing_super_classes,_unset, :writable},
+			     {:slave_missing_super_classes,_unset, :writable},
+			     {:method_compare_results, _unset, :writable}
+		     })
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_result.new(p_exemplar)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : -
+	## Returns       : -
+	## Function      : Return a new result object.
+	## Revision      : 
+	_return _clone.init(p_exemplar)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_result.init(p_exemplar)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_EXEMPLAR
+	## Returns       : self
+	## Function      : Initialise slots.
+	## Revision      : 
+	.exemplar << p_exemplar
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_result.different?
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : boolean
+	## Function      : Answer if there are any differences
+	## Revision      :
+	
+	_if .my_missing_slots _isnt _unset _andif _not .my_missing_slots.empty? _then _return _true _endif
+	_if .slave_missing_slots _isnt _unset _andif _not .slave_missing_slots.empty? _then _return _true _endif
+	_if .my_missing_super_classes _isnt _unset _andif _not .my_missing_super_classes.empty? _then _return _true _endif
+	_if .slave_missing_super_classes _isnt _unset _andif _not .slave_missing_super_classes.empty? _then _return _true _endif
+	_if .method_compare_results _isnt _unset _andif _not .method_compare_results.empty? _then _return _true _endif
+	
+	_return _false 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_result.show_on(p_stream)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_STREAM
+	## Returns       : 
+	## Function      : write info of self to the stream
+	## Revision      : 
+	_if .exemplar _isnt _unset
+	_then
+		p_stream.write(_self.class_name, " (")
+		p_stream.write(.exemplar.define_method_class_name)
+		p_stream.write(")")
+	_else
+		_super.show_on(p_stream)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_result.print_on(p_stream)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_STREAM: 
+	## Returns       : 
+	## Function      : print self on a stream.
+	## Revision      : 
+	p_stream.write(_self.class_name, ":", .exemplar)
+	p_stream.newline()
+	
+	_if .my_missing_slots _isnt _unset
+	_then
+		p_stream.write("my_missing_slots")
+		p_stream.newline()
+		.my_missing_slots.print_on(p_stream)
+	_endif
+	_if .slave_missing_slots _isnt _unset
+	_then
+		p_stream.write("slave_missing_slots")
+		p_stream.newline()
+		.slave_missing_slots.print_on(p_stream)
+	_endif
+	
+	_if .my_missing_super_classes _isnt _unset
+	_then
+		p_stream.write("my_missing_super_classes")
+		p_stream.newline()
+		.my_missing_super_classes.print_on(p_stream)
+	_endif
+	_if .slave_missing_super_classes _isnt _unset
+	_then
+		p_stream.write("slave_missing_super_classes")
+		p_stream.newline()
+		.slave_missing_super_classes.print_on(p_stream)
+	_endif
+
+	_if .method_compare_results _isnt _unset _andif _not .method_compare_results.empty?
+	_then
+		p_stream.write("method_compare_results")
+		p_stream.newline()
+		.method_compare_results.print_on(p_stream)
+	_endif
+_endmethod
+$
+

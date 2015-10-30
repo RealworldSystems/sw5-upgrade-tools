@@ -1,0 +1,182 @@
+#% text_encoding = iso8859_1
+##
+## File            : compare_result_writer.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Apr/2009
+## Date changed    : Nov/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  compare_result_writer
+## '|Methods (Public)|:`
+##                  compare_result_writer.new()
+##                  compare_result_writer.write_report()
+##                  compare_result_writer.write_report_on()
+## '|Methods (Private)|:`
+##                  compare_result_writer.init()
+##                  compare_result_writer.write_exemplar_difference()
+##                  compare_result_writer.write_message_handler_difference(
+##                  compare_result_writer.message()
+##                  compare_result_writer.write()
+##                  compare_result_writer.indent()
+##                  compare_result_writer.indent_right()
+##                  compare_result_writer.indent_left()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remex(:compare_result_writer)
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Apr/2009
+## Class Purpose : Write a text report with the results of the comparison
+## Revision      : 
+def_slotted_exemplar(:compare_result_writer,
+		     {
+			     {:result, _unset},
+			     {:output, _unset},
+			     {:indent, _unset}
+		     },
+		     {})
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_result_writer.new(p_result)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_RESULT: image_compare_result
+	## Returns       : writer
+	## Function      : Create new new writer
+	## Revision      : 
+	_return _clone.init(p_result)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_writer.init(p_result)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_RESULT: 
+	## Returns       : self
+	## Function      : Initialise slots
+	## Revision      : 
+	.result << p_result
+	.indent << 0
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_result_writer.write_report(p_filename)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_FILENAME
+	## Returns       : -
+	## Function      : Write information to the file.
+	## Revision      : 
+	l_output << external_text_output_stream.new(p_filename)
+	_protect
+		_self.write_report_on(l_output)
+	_protection
+		l_output.close()
+	_endprotect 
+_endmethod
+$
+
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_writer.message(p_message_id, _gather p_args)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_MESSAGE_ID: symbol
+	##                 P_ARGS: strings
+	## Returns       : string
+	## Function      : Return a translated string
+	## Revision      : 
+	_return message_handler.new(_self.class_name).human_string(p_message_id, p_message_id, _scatter p_args )
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_writer.write(_gather p_strings)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_STRINGS
+	## Returns       : -
+	## Function      : write to a log. Note that the strings can
+	##                 contain newline characters too.
+	## Revision      :
+	_self.indent()
+	_for i_string _over p_strings.fast_elements()
+	_loop
+		l_string << i_string
+		_loop
+			l_index << l_string.index_of(newline_char)
+			_if l_index _isnt _unset
+			_then
+				l_sub_str << l_string.slice(1,l_index-1)
+				l_string << l_string.slice_to_end(l_index+1)
+				.output.write(l_sub_str)
+				.output.newline()
+				_if _not l_string.empty?
+				_then
+					 #prepare for the next line
+					_self.indent()
+				_endif 
+			_elif l_string.empty?
+			_then
+				_leave
+			_else
+				.output.write(l_string)
+				_leave
+			_endif
+		_endloop
+	_endloop
+	.output.newline()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_writer.indent()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_OUTPUT: stream
+	## Returns       : -
+	## Function      : indent the output
+	## Revision      : 
+	_over range(1,.indent)
+	_loop
+		.output.write(" ")
+	_endloop
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_writer.indent_right()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : indent the output 3 spaces
+	## Revision      : 
+	.indent +<< 3
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_writer.indent_left()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : indent the output 3 spaces to the left
+	## Revision      : 
+	.indent -<< 3
+	_if .indent < 0 _then .indent << 0 _endif 
+_endmethod
+$
+

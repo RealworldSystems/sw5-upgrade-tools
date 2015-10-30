@@ -1,0 +1,322 @@
+#% text_encoding = iso8859_1
+##
+## File            : compare_engine_master.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Oct/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  compare_engine_master
+## '|Methods (Public)|:`
+##                  compare_engine_master.run()
+##                  compare_engine_master.!shake!()
+## '|Methods (Private)|:`
+##                  compare_engine_master.compare()
+##                  compare_engine_master.set_image_descriptions()
+##                  compare_engine_master.compare_exemplars()
+##                  compare_engine_master.compare_mixins()
+##                  compare_engine_master.compare_globals()
+##                  compare_engine_master.compare_message_handlers()
+##                  compare_engine_master.shake()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remex(:compare_engine_master)
+
+_pragma(classify_level=advanced, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose :  The class is dedicated to comparing two
+##                  images that are connected over a TCPIP
+##                  stream. The engine will orchestrate the
+##                  comparisons but will delegate the actual
+##                  comparisation to dedicated objects.
+##                  
+##                  This engine will be the master and
+##                  initiate the communication with the slave
+##                  in the other image.
+## Revision      : 
+def_slotted_exemplar(:compare_engine_master,
+		     {
+			     {:result, _unset} 
+		     },
+		     :compare_engine_base)
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method compare_engine_master.run()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : image_compare_result
+	## Function      : Run the comparison. Returns a result object
+	##                 that holds the differences between the
+	##                 images.
+	## Revision      :
+	.result << image_compare_result.new()
+	_local l_what_to_do_string << write_string(.compare_exemplars?, ";", .compare_mixins?, ";", .compare_globals?, ";", .compare_messages?)
+	_self.shake(:start, {l_what_to_do_string})
+	_self.compare()
+	_self.shake(:end)
+	_return .result
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_master.compare()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Compare the main elements.
+	## Revision      :
+	_self.set_image_descriptions()
+
+	_if .compare_exemplars?
+	_then
+		_self.compare_exemplars()
+	_endif
+
+	_if .compare_mixins?
+	_then
+		_self.compare_mixins()
+	_endif
+
+	_if .compare_globals?
+	_then
+		_self.compare_globals()
+	_endif
+
+	_if .compare_messages?
+	_then
+		_self.compare_message_handlers()
+	_endif	
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_master.set_image_descriptions()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Store the image descriptions of self and the slave.
+	## Revision      : 
+	.result.my_image_description << _self.get_image_description()
+	.result.slave_image_description << .connection.input.roos_get_chars16()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_master.compare_exemplars()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Compare the exemplars. 
+	## Revision      :
+	_self.shake(:start_exemplars)
+	l_exemplar_differences    << rope.new()
+	l_slave_missing_exemplars << rope.new()
+	l_exemplars << _self.all_exemplars()
+	l_count << l_exemplars.size
+	.connection.output.put_unsigned_int(l_count)
+	l_counter << _self.new_progress_counter(l_count)
+	_self.changed(:progress_start, l_count)
+	
+	l_engine << exemplar_compare_engine_master.new(.connection, .filter)
+	_for i_name, i_exemplar _over l_exemplars.fast_keys_and_elements()
+	_loop
+		l_result << l_engine.run(i_name, i_exemplar)
+		_if l_result _is _unset
+		_then
+			# Exemplar was missing at slave
+			l_slave_missing_exemplars.add(i_name)
+		_elif l_result.different?
+		_then		
+			l_exemplar_differences.add(l_result)
+		_endif 
+		l_counter.next()		
+	_endloop
+	_self.changed(:progress_complete)
+	l_my_missing_exemplars << _self.shake(:end_exemplars)
+	.result.my_missing_exemplars    << l_my_missing_exemplars
+	.result.slave_missing_exemplars << l_slave_missing_exemplars
+	.result.exemplar_differences    << l_exemplar_differences
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_master.compare_mixins()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Compare the mixins
+	## Revision      :
+	_self.shake(:start_mixins)
+	l_mixin_differences << rope.new()
+	l_slave_missing_mixins << rope.new()
+	l_mixins << _self.all_mixins()
+	l_count << l_mixins.size
+	.connection.output.put_unsigned_int(l_count)
+	l_counter << _self.new_progress_counter(l_count)
+	_self.changed(:progress_start, l_count)
+	
+	l_engine << exemplar_compare_engine_master.new(.connection, .filter)
+	_for i_name, i_mixin _over l_mixins.fast_keys_and_elements()
+	_loop
+		l_result << l_engine.run(i_name, i_mixin)
+		_if l_result _is _unset
+		_then
+			# Mixin was missing at slave
+			l_slave_missing_mixins.add(i_name)
+		_elif l_result.different?
+		_then
+			l_mixin_differences.add(l_result)
+		_endif 
+		l_counter.next()
+	_endloop
+	_self.changed(:progress_complete)
+	l_my_missing_mixins << _self.shake(:end_mixins)
+	.result.my_missing_mixins    << l_my_missing_mixins
+	.result.slave_missing_mixins << l_slave_missing_mixins
+	.result.mixin_differences    << l_mixin_differences
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_master.compare_globals()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Compare the globals.
+	## Revision      :
+	_self.shake(:start_globals)
+	l_global_differences << rope.new()
+	l_slave_missing_globals << rope.new()
+	l_globals << _self.all_globals()
+	l_count << l_globals.size
+	.connection.output.put_unsigned_int(l_count)
+	l_counter << _self.new_progress_counter(l_count)
+	_self.changed(:progress_start, l_count)
+	l_engine << value_compare_engine_master.new(.connection)
+	_for i_name, i_value _over l_globals.fast_keys_and_elements()
+	_loop		
+		(l_available?, l_same?) << l_engine.run(i_name, i_value)
+		_if _not l_available?
+		_then
+			_if i_value _isnt _unset
+			_then 
+				l_slave_missing_globals.add(i_name)
+			_else
+				# slave does not have the global, but the global is unset. Do
+				# not note that as a problem.
+			_endif 
+		_elif _not l_same?
+		_then
+			l_global_differences.add(i_name)
+		_endif
+		l_counter.next()
+	_endloop
+	_self.changed(:progress_complete)
+	l_my_missing_globals << _self.shake(:end_globals)
+	.result.my_missing_globals    << l_my_missing_globals
+	.result.slave_missing_globals << l_slave_missing_globals
+	.result.global_differences    << l_global_differences
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_master.compare_message_handlers()
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Compare the message_handlers.
+	## Revision      :
+	_self.shake(:start_message_handlers)
+	l_message_handler_differences << rope.new()
+	l_slave_missing_message_handlers << rope.new()
+	l_message_handlers << _self.all_message_handlers()
+	l_count << l_message_handlers.size
+	.connection.output.put_unsigned_int(l_count)
+	l_counter << _self.new_progress_counter(l_count)
+	_self.changed(:progress_start, l_count)
+	l_engine << message_handler_compare_engine_master.new(.connection, .filter)
+	_for i_name, i_value _over l_message_handlers.fast_keys_and_elements()
+	_loop
+		l_result << l_engine.run(i_name, i_value)
+		_if l_result _is _unset
+		_then
+			# Exemplar was missing at slave
+			l_slave_missing_message_handlers.add(i_name)
+		_elif l_result.different?
+		_then
+			l_message_handler_differences.add(l_result)
+		_endif 
+		l_counter.next()
+	_endloop
+	_self.changed(:progress_complete)
+	l_my_missing_message_handlers << _self.shake(:end_message_handlers)
+	.result.my_missing_message_handlers    << l_my_missing_message_handlers
+	.result.slave_missing_message_handlers << l_slave_missing_message_handlers
+	.result.message_handler_differences    << l_message_handler_differences
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_master.shake(p_what, _optional p_strings)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_WHAT: symbol
+	## Returns       : list of strings
+	## Function      : Send an acknowledgement and shake on it with
+	##                 the slave.
+	##                 Returns a vector of strings.
+	## Revision      :
+	_self.changed(:info_string, p_what)
+	_return _self.!shake!(.connection, p_what, p_strings)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_engine_master.!shake!(p_connection, p_what, p_strings)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_WHAT: symbol
+	## Returns       : list of strings
+	## Function      : Send an acknowledgement and shake on it with
+	##                 the slave.
+	##                 Returns a vector of strings.
+	## Revision      :
+	p_connection.output.roos_put_chars16(p_what)
+	p_connection.output.flush()
+	l_count << p_connection.input.get_unsigned_int()
+	l_rope << rope.new_for(l_count)
+	_over range(1,l_count)
+	_loop
+		l_string << p_connection.input.roos_get_chars16()
+		l_rope.add(l_string)
+	_endloop
+
+	l_count << _if p_strings _isnt _unset
+		   _then >> p_strings.size
+		   _else >> 0
+		   _endif
+
+	p_connection.output.put_unsigned_int(l_count)
+	_for i _over range(1,l_count)
+	_loop
+		p_connection.output.roos_put_chars16( p_strings[i] )
+	_endloop
+	
+	_return l_rope
+_endmethod
+$
+

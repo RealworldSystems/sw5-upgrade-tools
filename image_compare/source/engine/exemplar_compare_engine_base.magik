@@ -1,0 +1,159 @@
+#% text_encoding = iso8859_1
+##
+## File            : exemplar_compare_engine_base.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Mar/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  exemplar_compare_engine_base
+## '|Methods (Public)|:`
+##                  exemplar_compare_engine_base.new()
+## '|Methods (Private)|:`
+##                  exemplar_compare_engine_base.init()
+##                  exemplar_compare_engine_base.all_slot_names()
+##                  exemplar_compare_engine_base.all_super_class_names()
+##                  exemplar_compare_engine_base.all_method_names()
+##                  exemplar_compare_engine_base.all_shared_vars_and_constant_na
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remex(:exemplar_compare_engine_base)
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Base class of the classes that will compare
+##                 exemplars. Provides common methods for
+##                 both the mast and slave.
+## Revision      : 
+def_slotted_exemplar(:exemplar_compare_engine_base,
+		     {
+			     {:connection, _unset},
+			     {:filter,_unset},
+			     {:exemplar,_unset}
+		     })
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method exemplar_compare_engine_base.new(p_connection, p_filter)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_CONNECTION: tcpip_connection
+	##                 P_FILTER
+	## Returns       : engine
+	## Function      : Create a new engine ready to compare exemplars.
+	## Revision      : 
+	_return _clone.init(p_connection, p_filter)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_base.init(p_connection, p_filter)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_CONNECTION: tcpip_connection
+	##                 P_FILTER
+	## Returns       : self
+	## Function      : Initialise slots
+	## Revision      :
+	.connection << p_connection
+	.filter << p_filter
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_base.all_slot_names()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : rope of symbols
+	## Function      : Return the slot names
+	## Revision      :
+#	_return rope.new()
+	l_data << .exemplar.instance_metadata[:instance_slot_data]
+	_if l_data _is _unset _then l_data << {} _endif
+	l_names << rope.new_for(5)
+	_for i_desr _over l_data.fast_elements()
+	_loop
+		l_names.add(i_desr.slot_name )
+	_endloop
+	_return l_names
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_base.all_super_class_names()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : -
+	## Returns       : rope of symbols
+	## Function      : Return the names of the direct super classes.
+	## Revision      :
+#	_return rope.new()
+	_return rope.new_from(.exemplar.instance_metadata[:behaviour_sources].keys)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_base.all_method_names()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : -
+	## Returns       : rope of symbols
+	## Function      : Return the names of the local
+	##                 methods. Ignores shared_constant/variables
+	##                 and slot_accessor methods.
+	## Revision      :
+#	_return rope.new()	
+	l_names << rope.new_for(20)
+	_for i_method _over .exemplar.define_method_target.local_methods(_true)
+	_loop
+		_if _not i_method.shared_constant? _andif
+		    _not i_method.shared_variable? _andif
+		    _not i_method.slot_accessor?
+		_then 
+			_if _not .filter.ignore_method?(i_method, .exemplar)
+			_then 
+				l_names.add(i_method.name)
+			_endif 
+		_endif 
+	_endloop
+	_return l_names
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method exemplar_compare_engine_base.all_shared_vars_and_constant_names()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : -
+	## Returns       : rope of symbols
+	## Function      : Return the method names of the
+	##                 shared_constant/variables. 
+	## Revision      :
+#	_return rope.new()
+	l_names << rope.new_for(20)
+	_for i_method _over .exemplar.define_method_target.local_methods(_true)
+	_loop
+		_if i_method.shared_constant? _orif 
+		    i_method.shared_variable?
+		_then 
+			_if _not .filter.ignore_method?(i_method, .exemplar)
+			_then 
+				l_names.add(i_method.name)
+			_endif 
+		_endif 
+	_endloop
+	_return l_names
+_endmethod
+$
+

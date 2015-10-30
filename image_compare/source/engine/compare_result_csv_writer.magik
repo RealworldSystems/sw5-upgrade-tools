@@ -1,0 +1,329 @@
+#% text_encoding = iso8859_1
+##
+## File            : compare_result_csv_writer.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Apr/2009
+## Date changed    : Nov/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  compare_result_csv_writer
+## '|Methods (Public)|:`
+##                  compare_result_csv_writer.write_report_on()
+## '|Methods (Private)|:`
+##                  compare_result_csv_writer.write_exemplar_difference()
+##                  compare_result_csv_writer.write_message_handler_difference()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remex(:compare_result_csv_writer)
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Apr/2009
+## Class Purpose : Write a text report with the results of the comparison
+## Revision      : 
+def_slotted_exemplar(:compare_result_csv_writer,
+		     {
+		     },
+		     {:compare_result_writer})
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_result_csv_writer.write_report_on(p_output)
+	# Author         : Realworld Systems (sw); Date: Aug/2011
+	## Parameters    : P_OUTPUT
+	## Returns       : -
+	## Function      : Write information to the output stream.
+	## Revision      :
+
+	# Change output:
+	# What kind?: Exemplar, Mixin, Global, Message
+	# Which instance: I.e. cabinet or roos_multiport_mixin or
+	# !current_package! or :title
+	# Remark: What's the problem? I.e. Missing, Extra or different
+	# Extra remark field: If something else than What kind has a
+	# problem, put it here.
+	
+	# To do (requires changes to compare engines and compare_result
+	# object! Also requires adjustment of this method.):
+	# Difference: Put the difference here.
+	# Source file master: put in the source file of the problem
+	# object for the master image.
+	# Source file slave: put in the source file of the problem
+	# object for the slave image.	
+
+	.output << p_output
+
+	_local l_my_image_description << .result.my_image_description#.roos_find_and_replace_all("<newline>"," ")
+	_local l_slave_image_description << .result.slave_image_description#.roos_find_and_replace_all("%newline"," ")
+	
+	_local l_line << write_string("Kind;Instance;Remark;Extra remark;Master Path ", l_my_image_description, ";Slave path", l_slave_image_description)
+	l_line << write_string(l_line, ";Me Private?;Slave Private?;Me Abstract?;Slave Abstract?;Me Iter?; Slave Iter?;Me Shared constant?; Slave Shared constant?")
+	l_line << write_string(l_line, ";Me Shared variable?;Slave Shared variable?")
+	_self.write(l_line)
+
+	_local l_slots << rope.new_with(:my_missing_exemplars,
+					:slave_missing_exemplars,
+					:my_missing_mixins,
+					:slave_missing_mixins,
+					:my_missing_globals,
+					:slave_missing_globals,
+					:global_differences,
+					:my_missing_message_handlers,
+					:slave_missing_message_handlers)
+
+	_for i_slot _over l_slots.fast_elements()
+	_loop
+		_local l_result << .result.perform(i_slot)
+		_local l_kind << ""
+
+		_if l_result _is _unset# _orif l_result.empty?
+		_then
+			_continue 
+		_endif
+
+		_if i_slot.write_string.index_of_seq("exemplar") _isnt _unset 
+		_then
+			l_kind << "Exemplar"
+		_elif i_slot.write_string.index_of_seq("mixin") _isnt _unset
+		_then
+			l_kind << "Mixin"
+		_elif i_slot.write_string.index_of_seq("global") _isnt _unset
+		_then
+			l_kind << "Global"
+		_elif i_slot.write_string.index_of_seq("message") _isnt _unset
+		_then
+			l_kind << "Message handler"			
+		_endif
+	
+		_for i_string _over l_result.as_sorted_collection().fast_elements()
+		_loop
+			_self.write(l_kind, ";", i_string, ";", _self.message( i_slot ), ";")
+		_endloop
+	_endloop
+	
+	_if .result.exemplar_differences _isnt _unset _andif _not .result.exemplar_differences.empty?
+	_then 
+		l_proc << _proc(a,b) >> a.exemplar _cf b.exemplar _endproc 
+		_for i_diff _over .result.exemplar_differences.as_sorted_collection(l_proc).fast_elements()
+		_loop			
+			_self.write_exemplar_difference(i_diff, p_output, "Exemplar")
+		_endloop
+	_endif		
+
+	_if .result.mixin_differences _isnt _unset _andif _not .result.mixin_differences.empty?
+	_then
+		l_proc << _proc(a,b) >> a.exemplar _cf b.exemplar _endproc
+		_for i_diff _over .result.mixin_differences.as_sorted_collection(l_proc).fast_elements()
+		_loop
+			_self.write_exemplar_difference(i_diff, p_output, "Mixin")
+		_endloop
+	_endif
+
+	_if .result.message_handler_differences _isnt _unset _andif _not .result.message_handler_differences.empty?
+	_then
+		l_proc << _proc(a,b) _return a.message_handler _cf b.message_handler _endproc
+		_for i_diff _over .result.message_handler_differences.as_sorted_collection(l_proc).fast_elements()
+		_loop
+			_self.write_message_handler_difference(i_diff, p_output, "Message handler")
+		_endloop
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_csv_writer.write_exemplar_difference(p_diff, p_output, p_kind)
+	# Author         : Realworld Systems (sw); Date: Aug/2011
+	## Parameters    : P_DIFF: exemplar_result
+	##                 P_OUTPUT: stream
+	## Returns       : 
+	## Function      : 
+	## Revision      :
+
+	# Change output:
+	# What kind?: Exemplar, Mixin, Global, Message
+	# Which instance: I.e. cabinet or roos_multiport_mixin or
+	# !current_package! or :title
+	# Remark: What's the problem? I.e. Missing, Extra or different
+	# Extra remark field: If something else than What kind has a
+	# problem, put it here.
+
+	_local l_slots << rope.new_with(:my_missing_slots,
+					:slave_missing_slots,
+					:my_missing_super_classes,
+					:slave_missing_super_classes)
+					#:my_missing_methods,
+					#:slave_missing_methods,
+					#:method_differences,
+					#:my_missing_constants,
+					#:slave_missing_constants,
+					#:constant_differences)
+
+	_for i_slot _over l_slots.fast_elements()
+	_loop
+		_local l_result << p_diff.perform(i_slot)
+
+		_if l_result _is _unset _orif l_result.empty?
+		_then
+			_continue 
+		_endif		 
+		
+		_for i_string _over l_result.as_sorted_collection().fast_elements()
+		_loop
+			_local l_line << write_string(p_kind, ";", p_diff.exemplar, ";", _self.message( i_slot), ";", i_string)
+			_self.write(l_line)
+		_endloop
+	_endloop
+	
+	_if _not p_diff.method_compare_results.empty?
+	_then
+		_local l_proc << _proc(a,b) >> a.method _cf b.method _endproc
+		_for i_diff _over p_diff.method_compare_results.as_sorted_collection(l_proc).fast_elements()
+		_loop
+			#l_line << write_string(p_kind, ";", p_diff.exemplar, ";", _self.message( :method_differences), ";", i_string)
+			#_self.write(l_line)
+			_self.write_method_difference(i_diff, p_kind)
+		_endloop
+	_endif	
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_csv_writer.write_message_handler_difference(p_diff, p_output, p_kind)
+	# Author         : Realworld Systems (sw); Date: Aug/2011
+	## Parameters    : P_DIFF: message_handler_compare_result
+	##                 P_OUTPUT: stream
+	## Returns       : 
+	## Function      : 
+	## Revision      :
+
+	# Change output:
+	# What kind?: Exemplar, Mixin, Global, Message
+	# Which instance: I.e. cabinet or roos_multiport_mixin or
+	# !current_package! or :title
+	# Remark: What's the problem? I.e. Missing, Extra or different
+	# Extra remark field: If something else than What kind has a
+	# problem, put it here.
+
+	_local l_slots << rope.new_with(:my_missing_messages,
+					:slave_missing_messages)
+
+	_for i_slot _over l_slots.fast_elements()
+	_loop
+		_local l_result << p_diff.perform(i_slot)
+
+		_if l_result _is _unset _orif l_result.empty?
+		_then
+			_continue 
+		_endif		 
+		
+		_for i_string _over l_result.as_sorted_collection().fast_elements()
+		_loop
+			_local l_line << write_string(p_kind, ";", p_diff.message_handler, ";", _self.message( i_slot), ";", i_string)
+			_self.write(l_line)
+		_endloop
+	_endloop
+
+	l_slots << rope.new_with(:my_missing_languages,
+				 :slave_missing_languages,
+				 :translation_differences  )
+	
+	_for i_slot _over l_slots.fast_elements()
+	_loop
+		_local l_result << p_diff.perform(i_slot)
+
+		_if l_result _is _unset _orif l_result.empty?
+		_then
+			_continue 
+		_endif		 
+		
+		_for i_message _over l_result.keys.as_sorted_collection().fast_elements()
+		_loop
+			l_line << write_string(p_kind, ";", p_diff.message_handler, ";", _self.message(i_slot), ";",l_result[i_message.as_symbol()], ":", i_message)
+			_self.write(l_line)
+		_endloop
+	_endloop
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_result_csv_writer.write_method_difference(p_diff, p_kind)
+	#  Initial Author  : stefan.wagemans (REALWORLD), Date : 2011-09-02
+	## Parameters      : p_diff: a method_compare_result
+	## Returns         : -
+	## Pre             : -
+	## Function        : writes p_diff to csv.
+	## Post            : -	
+	
+	# To do (requires changes to compare engines and compare_result
+	# object! Also requires adjustment of this method.):
+	# Difference: Put the difference here.	
+	_local l_line << ""
+	_local l_exem << ""
+	_local l_missing_or_diff? << _false 
+
+	_try
+		l_exem << write_string(p_diff.method_exemplar)
+	_when error
+		_if package.all_packages[:sw].includes?(l_exem)
+		_then
+			l_exem << write_string("sw:", p_diff.method_exemplar.class_name)
+		_endif
+	_endtry
+
+	l_exem << l_exem.roos_find_and_replace_all(";", "_")
+		
+	_if p_diff.me_missing?
+	_then
+		_if p_diff.slave_shared_constant? _orif p_diff.slave_shared_variable?
+		_then
+			l_line << write_string(p_kind, ";", l_exem, ";", _self.message( :my_missing_constants), ";", p_diff.method, ";'-;", p_diff.slave_source_file)
+		_else
+			l_line << write_string(p_kind, ";", l_exem, ";", _self.message( :my_missing_methods), ";", p_diff.method, ";'-;", p_diff.slave_source_file)
+		_endif
+		
+		l_missing_or_diff? << _true
+	_elif p_diff.slave_missing?
+	_then
+		_if p_diff.me_shared_constant? _orif p_diff.me_shared_variable?
+		_then
+			l_line << write_string(p_kind, ";", l_exem, ";", _self.message( :slave_missing_constants), ";", p_diff.method, ";", p_diff.my_source_file, ";'-")
+		_else
+			l_line << write_string(p_kind, ";", l_exem, ";", _self.message( :slave_missing_methods), ";", p_diff.method, ";", p_diff.my_source_file, ";'-")
+		_endif
+		l_missing_or_diff? << _true
+	_elif p_diff.different?
+	_then
+		_if (p_diff.me_shared_constant? _orif p_diff.me_shared_variable?) _andif (p_diff.slave_shared_constant? _orif p_diff.slave_shared_variable?)
+		_then
+			l_line << write_string(p_kind, ";", l_exem, ";", _self.message( :constant_differences), ";", p_diff.method, ";", p_diff.my_source_file, ";", p_diff.slave_source_file)
+		_else
+			l_line << write_string(p_kind, ";", l_exem, ";", _self.message( :method_differences), ";", p_diff.method, ";", p_diff.my_source_file, ";", p_diff.slave_source_file)
+		_endif
+		l_missing_or_diff? << _true
+	_endif
+
+	_if l_missing_or_diff?
+	_then
+		l_line << write_string(l_line,";", p_diff.me_private?, ";", p_diff.slave_private?, ";", p_diff.me_abstract?, ";", p_diff.slave_abstract?,";", p_diff.me_iter?)
+		l_line << write_string(l_line, ";", p_diff.slave_iter?, ";", p_diff.me_shared_constant?, ";", p_diff.slave_shared_constant?, ";", p_diff.me_shared_variable?)
+		l_line << write_string(l_line, ";", p_diff.slave_shared_variable?)
+		_self.write(l_line)
+	_else
+		write("method compare object with out difference!: ", p_diff.method_exemplar, "   ", p_diff.method)
+	_endif
+_endmethod
+$

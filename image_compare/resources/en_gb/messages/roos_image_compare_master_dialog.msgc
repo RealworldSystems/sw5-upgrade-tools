@@ -1,0 +1,8 @@
+MSGCport_lblPortcompare_globals_lblCompare Globalsfilter_not_readableThe filter filename can not be read.roos_image_compare_master_dialogCompare Images (Sender)compare_mixins_lblCompare Mixinsslave_not_listeningThe Receiver is not listening at the given port.#nFirst start the Receiver.readyPress Start to beginreport_format_lblReport formattop_infoEnter the port and host where the Receiver is listening. Either use the the name
+or the ip-number of the machine. Use 'localhost' for
+the the current machine.
+
+Make sure the Sender and Receiver use the same filter file. Otherwise
+the result could be confusing.
+
+First start the Receiver.start_ttStart comparing. This may take some minutes.writing_reportReport is being written...host_lblHostcompare_exemplars_lblCompare Exemplarspick_report_titlePick the filename for the reportstart_lblStartpick_filter_titlePick the filter for comparing:report_endReport is finished.compare_messages_lblCompare Message Handlersreport_not_creatableThe report filename can not be created.close_lblClosestop_lblStopcommunication_was_interruptedCommunicatie is interrupted.no_valid_hostThe Host name can not be foundfilter_lblFilterstop_ttInterrupt the action. No report is written.report_lblReport

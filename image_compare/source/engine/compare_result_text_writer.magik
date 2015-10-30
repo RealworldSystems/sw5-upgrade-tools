@@ -1,0 +1,316 @@
+#% text_encoding = iso8859_1
+##
+## File            : compare_result_text_writer.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Apr/2009
+## Date changed    : Nov/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  compare_result_text_writer
+## '|Methods (Public)|:`
+##                  compare_result_text_writer.new()
+##                  compare_result_text_writer.write_report()
+##                  compare_result_text_writer.write_report_on()
+## '|Methods (Private)|:`
+##                  compare_result_text_writer.init()
+##                  compare_result_text_writer.write_exemplar_difference()
+##                  compare_result_text_writer.write_message_handler_difference(
+##                  compare_result_text_writer.message()
+##                  compare_result_text_writer.write()
+##                  compare_result_text_writer.indent()
+##                  compare_result_text_writer.indent_right()
+##                  compare_result_text_writer.indent_left()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remex(:compare_result_text_writer)
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Apr/2009
+## Class Purpose : Write a text report with the results of the comparison
+## Revision      : 
+def_slotted_exemplar(:compare_result_text_writer,
+		     {			     
+		     },
+		     {:compare_result_writer})
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method compare_result_text_writer.write_report_on(p_output)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_OUTPUT
+	## Returns       : -
+	## Function      : Write information to the output stream.
+	## Revision      :
+	.output << p_output
+	_self.write( _self.message( :title, date_time_now() ) )
+	_self.write( _self.message( :current_image ) )
+	_self.indent_right()
+	_self.write( .result.my_image_description.roos_find_and_replace_all(".msf ", write_string(".msf", %newline)) )
+	p_output.newline()
+	_self.indent_left()
+	
+	_self.write( _self.message( :other_image ) )
+	_self.indent_right()
+	_self.write( .result.slave_image_description.roos_find_and_replace_all(".msf ", write_string(".msf", %newline)) )
+	p_output.newline()
+	_self.indent_left()
+
+	_local l_slots << rope.new_with(:my_missing_exemplars,
+					:slave_missing_exemplars,
+					:my_missing_mixins,
+					:slave_missing_mixins,
+					:my_missing_globals,
+					:slave_missing_globals,
+					:global_differences,
+					:my_missing_message_handlers,
+					:slave_missing_message_handlers)
+
+	_for i_slot _over l_slots.fast_elements()
+	_loop
+		_local l_result << .result.perform(i_slot)
+
+		_if l_result _is _unset 
+		_then
+			_continue 
+		_endif
+
+		_self.write( _self.message( i_slot ) )
+		_self.indent_right()
+		_for i_string _over l_result.as_sorted_collection().fast_elements()
+		_loop
+			_self.write("-", i_string)
+		_endloop
+		.output.newline()
+		_self.indent_left()		
+	_endloop
+		
+	_if .result.exemplar_differences _isnt _unset _andif _not .result.exemplar_differences.empty?
+	_then 
+		_self.write( _self.message( :exemplar_differences ) )
+		_self.indent_right()
+		l_proc << _proc(a,b) >> a.exemplar _cf b.exemplar _endproc 
+		_for i_diff _over .result.exemplar_differences.as_sorted_collection(l_proc).fast_elements()
+		_loop
+			_self.write_exemplar_difference(i_diff, p_output)
+			.output.newline()
+		_endloop
+		.output.newline()
+		_self.indent_left()
+	_endif	
+	
+	_if .result.mixin_differences _isnt _unset _andif _not .result.mixin_differences.empty?
+	_then 
+		_self.write( _self.message( :mixin_differences ) )
+		_self.indent_right()
+		l_proc << _proc(a,b) >> a.exemplar _cf b.exemplar _endproc
+		_for i_diff _over .result.mixin_differences.as_sorted_collection(l_proc).fast_elements()
+		_loop
+			_self.write_exemplar_difference(i_diff, p_output)
+		_endloop
+		.output.newline()
+		_self.indent_left()
+	_endif	
+	
+	_if .result.message_handler_differences _isnt _unset _andif _not .result.message_handler_differences.empty?
+	_then
+		_self.write( _self.message( :message_handler_differences) )
+		_self.indent_right()
+		l_proc << _proc(a,b) _return a.message_handler _cf b.message_handler _endproc
+		_for i_diff _over .result.message_handler_differences.as_sorted_collection(l_proc).fast_elements()
+		_loop
+			_self.write_message_handler_difference(i_diff, p_output)
+		_endloop
+		.output.newline()
+		_self.indent_left()
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_text_writer.write_exemplar_difference(p_diff, p_output)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_DIFF: exemplar_result
+	##                 P_OUTPUT: stream
+	## Returns       : 
+	## Function      : 
+	## Revision      : 
+	_self.write( p_diff.exemplar )
+	_self.indent_right()
+
+	_local l_slots << rope.new_with(:my_missing_slots,
+					:slave_missing_slots,
+					:my_missing_super_classes,
+					:slave_missing_super_classes)
+					#:my_missing_methods,
+					#:slave_missing_methods,
+					#:method_differences,
+					#:my_missing_constants,
+					#:slave_missing_constants,
+					#:constant_differences)
+
+	_for i_slot _over l_slots.fast_elements()
+	_loop
+		_local l_result << p_diff.perform(i_slot)
+
+		_if l_result _is _unset 
+		_then
+			_continue 
+		_endif
+
+		_self.write( _self.message( i_slot ) )
+		_self.indent_right()
+		_for i_string _over l_result.as_sorted_collection().fast_elements()
+		_loop
+			_self.write("-", i_string)
+		_endloop		
+		_self.indent_left()		
+	_endloop
+
+	_if _not p_diff.method_compare_results.empty?
+	_then
+		_local l_my_missing_methods << sorted_collection.new()
+		_local l_slave_missing_methods << sorted_collection.new()
+		_local l_method_differences << sorted_collection.new()
+		_local l_my_missing_constants << sorted_collection.new()
+		_local l_slave_missing_constants << sorted_collection.new()
+		_local l_constant_differences << sorted_collection.new()
+		 
+		_for i_result _over p_diff.method_compare_results.fast_elements()
+		_loop
+			_if i_result.me_missing?
+			_then
+				_if i_result.slave_shared_constant? _orif i_result.slave_shared_variable?
+				_then
+					l_my_missing_constants.add(i_result.method.write_string)
+				_else
+					l_my_missing_methods.add(i_result.method.write_string)
+				_endif
+			_elif i_result.slave_missing?
+			_then
+				_if i_result.slave_shared_constant? _orif i_result.slave_shared_variable?
+				_then
+					l_slave_missing_constants.add(i_result.method.write_string)
+				_else
+					l_slave_missing_methods.add(i_result.method.write_string)
+				_endif
+			_elif i_result.different?
+			_then
+				_if i_result.slave_shared_constant? _orif i_result.slave_shared_variable?
+				_then
+					l_constant_differences.add(i_result.method.write_string)
+				_else
+					l_different_methods.add(i_result.method.write_string)
+				_endif
+			_endif
+		_endloop
+
+		_local l_slots << equality_property_list.new_with(:my_missing_methods, l_my_missing_methods,
+						:slave_missing_methods, l_slave_missing_methods,
+						:method_differences, l_method_differences,
+						:my_missing_constants, l_my_missing_constants,
+						:slave_missing_constants, l_slave_missing_constants,
+						:constant_differences, l_constant_differences)
+
+		_for i_slot, i_strings _over l_slots.fast_keys_and_elements()
+		_loop
+			_if _not i_strings.empty?
+			_then
+				_self.write( _self.message( i_slot ) )
+				_self.indent_right()
+				_for i_string _over i_strings.fast_elements()
+				_loop
+					_self.write("-", i_string)
+				_endloop
+				_self.indent_left()
+			_endif
+		_endloop
+	_endif
+	_self.indent_left()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_result_text_writer.write_message_handler_difference(p_diff, p_output)
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : P_DIFF: message_handler_compare_result
+	##                 P_OUTPUT: stream
+	## Returns       : 
+	## Function      : 
+	## Revision      :
+	_self.write( p_diff.message_handler )
+	_self.indent_right()
+
+	
+	
+	_if _not p_diff.my_missing_messages.empty?
+	_then
+		_self.write( _self.message( :my_missing_messages) )
+		_self.indent_right()
+		_for i_message _over p_diff.my_missing_messages.as_sorted_collection().fast_elements()
+		_loop
+			_self.write("-", i_message)
+		_endloop
+		_self.indent_left()
+	_endif
+
+	_if _not p_diff.slave_missing_messages.empty?
+	_then
+		_self.write( _self.message( :slave_missing_messages) )
+		_self.indent_right()
+		_for i_message _over p_diff.slave_missing_messages.as_sorted_collection().fast_elements()
+		_loop
+			_self.write("-", i_message)
+		_endloop
+		_self.indent_left()
+	_endif
+
+	_if _not p_diff.my_missing_languages.empty?
+	_then
+		_self.write( _self.message( :my_missing_languages) )
+		_self.indent_right()
+		_for i_message _over p_diff.my_missing_languages.keys.as_sorted_collection().fast_elements()
+		_loop
+			_self.write("-", i_message, ":", p_diff.my_missing_languages[i_message.as_symbol()])
+		_endloop
+		_self.indent_left()
+	_endif
+
+	_if _not p_diff.slave_missing_languages.empty?
+	_then
+		_self.write( _self.message( :slave_missing_languages) )
+		_self.indent_right()
+		_for i_message _over p_diff.slave_missing_languages.keys.as_sorted_collection().fast_elements()
+		_loop
+			_self.write("-", i_message, ":", p_diff.slave_missing_languages[i_message.as_symbol()])
+		_endloop
+		_self.indent_left()
+	_endif
+
+	_if _not p_diff.translation_differences.empty?
+	_then
+		_self.write( _self.message( :translation_differences) )
+		_self.indent_right()
+		_for i_message _over p_diff.translation_differences.keys.as_sorted_collection().fast_elements()
+		_loop
+			_self.write("-", i_message, ":", p_diff.translation_differences[i_message.as_symbol()])
+		_endloop
+		_self.indent_left()
+	_endif
+	_self.indent_left()
+_endmethod
+$

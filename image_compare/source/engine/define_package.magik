@@ -1,0 +1,31 @@
+#% text_encoding = iso8859_1
+##
+## File            : define_package.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Mar/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## `Source Code'
+#&&
+#
+_package user
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+##
+## Defines a package for the roos_image_compare module.
+##
+def_package(:roos_image_compare)
+$
+

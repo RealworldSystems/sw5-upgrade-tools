@@ -1,0 +1,9 @@
+condition
+
+engine/
+sw/
+
+roos_image_compare_base_dialog
+roos_image_compare_master_dialog
+roos_image_compare_slave_dialog
+roos_image_compare_dialog

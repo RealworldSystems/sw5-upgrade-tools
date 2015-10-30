@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<compare_filter>
+  <global_filters>
+    <filter>sw:sf_symbol_table</filter>
+    <filter>sw:symbol_table</filter>
+    <filter>sw:symbol</filter>
+    <filter>sw:!current_package!</filter>
+    <filter>sw:!hack_file!</filter>
+  </global_filters>
+  <method_source_file_filters>
+    <filter>C:/GIS410/PRODUCT/modules/*</filter>
+    <filter>*swdev*</filter>
+  </method_source_file_filters> 
+</compare_filter>

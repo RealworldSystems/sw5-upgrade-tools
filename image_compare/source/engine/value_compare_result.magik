@@ -1,0 +1,79 @@
+#% text_encoding = iso8859_1
+##
+## File            : value_compare_result.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Mar/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  value_compare_result
+## '|Methods (Public)|:`
+##                  value_compare_result.new()
+##                  value_compare_result.different?
+## '|Methods (Private)|:`
+##                  value_compare_result.init()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+#remex(:value_compare_result)
+
+_pragma(classify_level=advanced, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Holder of the differences between two values
+## Revision      : 
+def_slotted_exemplar(:value_compare_result,
+		     {
+			     {:value,_unset,:readable},
+			     {:my_value,_unset, :writable},
+			     {:slave_value,_unset, :writable}
+		     })
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method value_compare_result.new(p_value)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : 
+	## Revision      : 
+	_return _clone.init(p_value)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method value_compare_result.init(p_value)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_EXEMPLAR: 
+	## Returns       : 
+	## Function      : 
+	## Revision      : 
+	.value << p_value
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method value_compare_result.different?
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : boolean
+	## Function      : Answer if there are any differences
+	## Revision      : 
+	_return .my_value <> .slave_value
+_endmethod
+$
+

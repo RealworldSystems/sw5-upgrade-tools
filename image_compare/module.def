@@ -1,0 +1,4 @@
+image_compare	42000
+description
+	Compares two images and lists the changes
+end

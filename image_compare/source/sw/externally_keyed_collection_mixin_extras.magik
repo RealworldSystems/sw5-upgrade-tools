@@ -1,0 +1,38 @@
+##
+## File            : $File: (externally_keyed_collection_mixin_extras.magik) $
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2011-09-12
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package sw
+$
+
+_method externally_keyed_collection_mixin.roos_stringify_value_for_compare(p_engine)
+	l_string << _unset
+	_try
+		l_out << internal_text_output_stream.new()
+		_for i_key _over _self.keys.as_sorted_collection.fast_elements()
+		_loop
+			l_key_string << p_engine.stringify_value(i_key)
+			l_value << _self[i_key]
+			l_value_string << p_engine.stringify_value(l_value)
+			
+			l_out.write( l_key_string, ":", l_value_string)
+		_endloop
+		l_string << l_out.string
+	_when error
+	_endtry
+	_return l_string
+_endmethod
+$

@@ -1,0 +1,357 @@
+#% text_encoding = iso8859_1
+##
+## File            : roos_image_compare_base_dialog.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Apr/2009
+## Date changed    : Apr/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Shared Cons|:`
+##                  roos_image_compare_base_dialog.roos_default_port_number
+## '|Class Defs|:`
+##                  roos_image_compare_base_dialog
+## '|Methods (Public)|:`
+##                  roos_image_compare_base_dialog.note_progress_change()
+##                  roos_image_compare_base_dialog.roos_start()
+##                  roos_image_compare_base_dialog.roos_start_in_background()
+##                  roos_image_compare_base_dialog.roos_stop()
+##                  roos_image_compare_base_dialog.note_change()
+##                  roos_image_compare_base_dialog.roos_picked_filter()
+##                  roos_image_compare_base_dialog.roos_pick_filter()
+## '|Methods (Private)|:`
+##                  roos_image_compare_base_dialog.roos_default_filter_file
+##                  roos_image_compare_base_dialog.init()
+##                  roos_image_compare_base_dialog.roos_build_progress()
+##                  roos_image_compare_base_dialog.roos_clear_progress()
+##                  roos_image_compare_base_dialog.roos_install_progress_handler
+##                  roos_image_compare_base_dialog.roos_verify_port()
+##                  roos_image_compare_base_dialog.roos_build_buttons()
+##                  roos_image_compare_base_dialog.roos!int_start()
+##                  roos_image_compare_base_dialog.roos_info_string<<
+# `Source Code'
+#&&
+#
+_package user
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Apr/2009
+## Class Purpose : Base class for the master and slave dialogs.
+## Revision      : 
+def_slotted_exemplar(:roos_image_compare_base_dialog,
+		     {
+			     {:roos_items,_unset},
+			     {:roos_thread,_unset},
+			     {:roos_engine, _unset},
+			     {:roos_progress_handler, _unset}
+		     },
+		     {:model})
+$
+
+message_handler.new(:roos_image_compare_base_dialog).set_uses_list({:model})
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+roos_image_compare_base_dialog.define_shared_constant(
+	:roos_default_port_number, 
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Purpose       : Constant for the default port number
+	## Revision      : 
+	2002,
+	:private)
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.roos_default_filter_file
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : string
+	## Function      : Return the name of the default filter.
+	## Revision      : 
+	_return smallworld_product.get_data_file("exampleFilter.xml", _self.module_name)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.init(_gather p_args)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_ARGS 
+	## Returns       : self
+	## Function      : Initialise slots.
+	## Revision      :
+	.roos_items << property_list.new()
+	_return _super.init(_scatter p_args)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.roos_build_progress(p_container)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_CONTAINER: 
+	## Returns       : 
+	## Function      : Build the progress indicator
+	## Revision      : 
+	l_rc << rowcol.new(p_container, _unset, 1, :pixel, :style, :nested, :col_alignment, :fill )
+	.roos_items[:info_string] << label_item.new(l_rc, "")
+	l_canvas << canvas.new(l_rc, 200, 16)
+	l_canvas.col_alignment << :fill
+	.roos_items[:progress_canvas] << l_canvas
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.roos_clear_progress()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : Clear the progress indicators.
+	## Revision      :
+	.roos_items[:progress_canvas].clear()
+	_self.roos_info_string << _self.message(:ready)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.roos_install_progress_handler(p_max)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_MAX
+	## Returns       : handler
+	## Function      : Create an progress_handler that will run to
+	##                 P_MAX. The handler will inform us of any
+	##                 visible progress.
+	## Revision      : 
+	l_handler << bar_progress_indicator.new( "xxx",  _self, :max_count, p_max)
+	l_handler.add_dependent(_self)
+	l_handler.set_canvas_dimensions(.roos_items[:progress_canvas].width, .roos_items[:progress_canvas].height )
+	_return l_handler
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_base_dialog.note_progress_change(p_who, p_what, p_data)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_WHO, P_WHAT, P_DATA
+	## Returns       : 
+	## Function      : Handle the change notification. As soon as
+	##                 we get the message from out engine that
+	##                 sometihng involving progress is starting, we
+	##                 will create a progress_handler for it. The
+	##                 progress handler is informed over every
+	##                 change and the progress_handler will inform
+	##                 us when something visible in the progressbar
+	##                 should be updated.
+	## Revision      :
+	_if p_who _is .roos_progress_handler
+	_then
+		_if p_what _is :progress_change
+		_then
+			# something visible has changed in the progress.
+			.roos_progress_handler.show_state(.roos_items[:progress_canvas])
+		_elif p_what _is :progress_complete
+		_then
+			# the progress has stopped.
+			_self.roos_clear_progress()
+			.roos_progress_handler << _unset
+		_endif
+		
+	_elif p_who _is .roos_engine
+	_then
+		_if p_what _is :progress_start
+		_then
+			.roos_progress_handler << _self.roos_install_progress_handler(p_data)
+		_elif p_what _is :progress_change
+		_then
+			_self.changed( :progress_change, p_data.count )
+		_elif p_what _is :progress_complete
+		_then
+			_self.changed(:progress_complete)
+		_endif 
+	_endif	
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.roos_verify_port(p_string)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_STRING: 
+	## Returns       : number
+	## Function      : Return the port number.
+	## Revision      : 
+	l_port << p_string.as_number()
+	_if l_port _is _unset _orif
+	    l_port < 1 _orif
+	    l_port > 65535
+	_then
+		_self.user_error( :no_valid_port, _unset,  p_string)
+	_endif
+	_return l_port
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.roos_build_buttons(p_container)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_CONTAINER
+	## Returns       : 
+	## Function      : Build the buttons in the GUI
+	## Revision      : 
+	l_b_width << _self.get_optional_resource(:min_button_width,:integer).default( 75 )
+	l_b_rc << rowcol.new(p_container, 1, _unset, :pixel, :style, :button_box, :col_alignment, :fill )
+	.roos_items[:start] << button_item.new_safe( l_b_rc, _self.message( :start_lbl),
+						     _self, :|roos_start()|,
+						     :balloon_help_text, _self.message(:start_tt),
+						     :min_width, l_b_width )
+	
+	.roos_items[:stop] << button_item.new_safe( l_b_rc, _self.message( :stop_lbl),
+						    _self, :|roos_stop()|,
+						     :balloon_help_text, _self.message(:stop_tt),
+						     :min_width, l_b_width )
+	
+	.roos_items[:close] << button_item.new_safe( l_b_rc, _self.message( :close_lbl),
+						     _self, :|close()|,
+						     :min_width, l_b_width,
+						     :col_alignment, :right )	
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_base_dialog.roos_start()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Start the compare engine.
+	## Revision      :
+	_self.roos_clear_progress()
+	(l_host, l_port, l_filter, l_report) << _self.roos_verify_params()
+	l_proc << _proc(p_dialog, l_host, l_port, l_filter, l_report)
+			  p_dialog.perform_safely(:|roos_start_in_background()|, l_host, l_port, l_filter, l_report)
+		  _endproc 
+	.roos_thread << heavy_thread.new_general(
+				l_proc,
+				{_self,l_host, l_port, l_filter, l_report},
+				:priority, thread.high_background_priority,
+				:share_environment?, _false,
+				:name, "Compare Thread",
+				:resume_now?, _true )
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_base_dialog.roos_start_in_background(p_host, p_port, p_filter, p_report)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_HOST, P_PORT, P_FILTER, P_REPORT
+	## Returns       : -
+	## Function      : Starts the compare in the
+	##                 background. Handles the visibility settings.
+	## Revision      :
+	.roos_thread << _thisthread
+	_self.roos_set_visibility()
+	_protect
+		_self.roos!int_start(p_host, p_port, p_filter, p_report)
+	_protection
+		.roos_thread << _unset
+		_self.roos_set_visibility()
+	_endprotect
+	_self.show_message( _self.message( :compare_ready ) )
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.roos!int_start(p_host, p_port, p_filter, p_report)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Start the engine and report the
+	##                 results. Catches aukward conditions.
+	## Revision      :
+	_try
+		_self.roos!int_start_engine(p_host, p_port, p_filter, p_report)
+		
+	_when magik_prim_suspended, magik_prim_error
+	      _self.user_error( :communication_was_interrupted )
+	_endtry 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_base_dialog.roos_stop()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : 
+	## Function      : Stop the thread.
+	## Revision      :
+	_if .roos_thread _isnt _unset
+	_then 
+		.roos_thread.kill_and_wait()
+		.roos_thread << _unset
+	_endif 
+	_self.roos_set_visibility()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method roos_image_compare_base_dialog.roos_info_string << p_string
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_STRING
+	## Returns       : -
+	## Function      : Update the string value of the label.
+	## Revision      :
+	.roos_items[:info_string].value << p_string
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_base_dialog.note_change(p_who, p_what, p_data)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : PO_WHO: 
+	##                 P_WHAT: 
+	##                 P_DATA: 
+	## Returns       : 
+	## Function      : Handle the change notification.
+	## Revision      :
+	_self.note_progress_change(p_who, p_what, p_data)
+	
+	_if p_who _is .roos_engine _andif
+	    p_what _is :info_string
+	_then
+		_self.roos_info_string << _self.message(:engine_lbl_ + p_data)
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_base_dialog.roos_picked_filter(p_filename)
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : P_FILENAME: string
+	## Returns       : Callback method from the dialog when a filename was entered
+	## Function      : Sets the name in the text_item
+	## Revision      :
+	.roos_items[:filter].value << p_filename
+	_self.roos_set_visibility()
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method roos_image_compare_base_dialog.roos_pick_filter()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : -
+	## Function      : Activate a dialog to pick a filename
+	## Revision      : 
+	file_dialog.new(_self, :|roos_picked_filter()|, _unset,
+			:do_existence_check?, _true,
+			:filter, {"XML", "*.xml"}
+		    ).activate_relative_to(_self.message(:pick_filter_title), _self.top_frame)
+_endmethod
+$
+

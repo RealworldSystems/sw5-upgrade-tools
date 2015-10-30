@@ -1,0 +1,254 @@
+#% text_encoding = iso8859_1
+##
+## File            : compare_engine_base.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Oct/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  compare_engine_base
+## '|Methods (Public)|:`
+##                  compare_engine_base.new()
+## '|Methods (Private)|:`
+##                  compare_engine_base.init()
+##                  compare_engine_base.all_exemplars()
+##                  compare_engine_base.all_mixins()
+##                  compare_engine_base.all_globals()
+##                  compare_engine_base.all_message_handlers()
+##                  compare_engine_base.new_progress_counter()
+##                  compare_engine_base.is_exemplar?()
+##                  compare_engine_base.get_image_description()
+## `Source Code'
+#&&
+#
+
+_package roos_image_compare
+$
+
+_pragma(classify_level=advanced, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : The base class of engines that do
+##                 comparision. Provides common methods for
+##                 both the mast and slave.
+## Revision      : 
+def_slotted_exemplar(:compare_engine_base,
+		     {
+			     {:connection, _unset},
+			     {:filter,_unset},
+			     {:compare_exemplars?, _unset },
+			     {:compare_mixins?, _unset },
+			     {:compare_globals?, _unset },
+			     {:compare_messages?, _unset }
+									     
+		     })
+$
+
+_pragma(classify_level=basic, topic={roos,roos_image_compare})
+_method compare_engine_base.new(p_connection, p_filter, _optional p_to_compare)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_CONNECTION: tcpip_connection
+	##                 P_FILTER
+	##                 P_TO_COMPARE: property_list
+	## Returns       : engine
+	## Function      : Create a new engine ready to compare. Send
+	##                 run() to start comparing.
+	## Revision      : 
+	_return _clone.init(p_connection, p_filter, p_to_compare)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_base.init(p_connection, p_filter, _optional p_to_compare)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_CONNECTION: tcpip_connection
+	##                 P_FILTER
+	##                 P_TO_COMPARE: property_list
+	## Returns       : self
+	## Function      : Initialise slots
+	## Revision      :
+	.connection << p_connection
+	.connection.autoflush? << _true
+	.filter << p_filter
+
+	_if p_to_compare.is_kind_of?(equality_property_list)
+	_then		
+		.compare_exemplars? << p_to_compare[:exemplars]
+		.compare_mixins? << p_to_compare[:mixins]
+		.compare_globals? << p_to_compare[:globals]
+		.compare_messages? << p_to_compare[:messages]
+	_endif
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_base.all_exemplars()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : equality_hash_table
+	## Function      : Return the exemplars, keyed on package:class_name.
+	## Revision      :
+	l_exemplars << equality_hash_table.new()
+	_for i_package _over !current_package!.all_packages.fast_elements()
+	_loop
+		l_package_name << i_package.name
+		_for i_name, i_element _over i_package.fast_keys_and_elements(_true)
+		_loop
+			l_name << write_string( l_package_name, ":", i_name)
+			_if .filter.ignore_global?(l_name, i_element) _then _continue _endif
+			
+			_if _self.is_exemplar?(i_element)
+			_then
+				l_exemplars[l_name] << i_element
+			_endif 
+		_endloop
+	_endloop
+	_return l_exemplars
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_base.all_mixins()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : -
+	## Returns       : equality_hash_table
+	## Function      : Return the mixins, keyed on package:class_name.
+	## Revision      :
+	l_mixins << equality_hash_table.new()
+	_for i_package _over !current_package!.all_packages.fast_elements()
+	_loop
+		l_package_name << i_package.name
+		_for i_name, i_element _over i_package.fast_keys_and_elements(_true)
+		_loop
+			l_name << write_string( l_package_name, ":", i_name)
+			_if .filter.ignore_global?(l_name, i_element) _then _continue _endif
+			
+			_if i_element.define_method_target.for_mixin?
+			_then
+				l_mixins[l_name] << i_element
+			_endif 
+		_endloop
+	_endloop
+	_return l_mixins
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_base.all_globals()
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : 
+	## Returns       : equality_hash_table
+	## Function      : Return the globals, keyed on package:class_name.
+	## Revision      :
+	l_globals << equality_hash_table.new()
+	_for i_package _over !current_package!.all_packages.fast_elements()
+	_loop
+		l_package_name << i_package.name
+		_for i_name, i_element _over i_package.fast_keys_and_elements(_true)
+		_loop
+			l_name << write_string( l_package_name, ":", i_name)
+			_if .filter.ignore_global?(l_name, i_element) _then _continue _endif
+			
+			_if (i_element.class_name _isnt :mixin_mixin) _andif
+			    (_not _self.is_exemplar?(i_element))
+			_then
+				l_globals[l_name] << i_element
+			_endif 
+		_endloop
+	_endloop
+	_return l_globals
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_base.all_message_handlers()
+	# Author         : Realworld Systems (SL); Date: Oct/2009
+	## Parameters    : 
+	## Returns       : equality_hash_table
+	## Function      : Return the message_handlers, keyed on
+	##                 message_handler.name.
+	## Revision      :
+	# :application always exists, so use it
+	l_dummy_name << :application
+	l_message_handlers << equality_hash_table.new()
+	_for i_mh _over message_handler.new(l_dummy_name).groups.fast_elements()
+	_loop
+		l_mh_name << i_mh.name
+		_if .filter.ignore_message_handler?(l_mh_name, i_mh) _then _continue _endif
+		l_message_handlers[l_mh_name] << i_mh
+	_endloop
+	
+	_return l_message_handlers
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_base.new_progress_counter(p_max)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_MAX 
+	## Returns       : progress_counter
+	## Function      : Creates a progress counter that will send
+	##                 change notifications on each increment.
+	## Revision      : 
+	l_counter << progress_counter.new_on_count(1, p_max)
+	_local l_me << _self 
+	l_counter.reporter << _proc(p_counter)
+				      _import l_me
+				      l_me.changed(:progress_change, p_counter)
+			      _endproc
+	_return l_counter
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_base.is_exemplar?(p_thing)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_THING: 
+	## Returns       : boolean
+	## Function      : Answer if we will consider P_THING an exemplar
+	## Revision      :
+	_if p_thing _is _unset _then _return _false _endif
+	_if p_thing _is _true  _then _return _false _endif
+	_if p_thing _is _false  _then _return _false _endif
+	_if p_thing _is _maybe  _then _return _false _endif
+	_if p_thing _is no_way _then _return _false _endif
+	_if p_thing _is bignum _then _return _false _endif
+	_return p_thing.exemplar _is p_thing
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_private _method compare_engine_base.get_image_description()
+	# Author         : Realworld Systems (FvH); Date: Apr/2009
+	## Parameters    : 
+	## Returns       : string
+	## Function      : Return a string that describes this image.
+	## Revision      : 
+	l_stream << internal_text_output_stream.new()
+	l_stream.write(system.image_name)
+	#l_stream.newline()
+	_if smallworld_product.responds_to?(:|version_message()|)
+	_then 					     
+		# > sw 4.1
+		l_stream.write(" Smallworld Core ", smallworld_product.version_message().trim_spaces())
+	_elif smallworld_product.responds_to?(:version_string)
+	_then
+		# other
+		l_stream.write(" Smallworld Core ", smallworld_product.version_string.trim_spaces())
+	_endif 
+	#l_stream.newline()
+	_return l_stream.string
+_endmethod
+$
+

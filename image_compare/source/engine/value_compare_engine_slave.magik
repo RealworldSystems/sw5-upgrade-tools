@@ -1,0 +1,99 @@
+#% text_encoding = iso8859_1
+##
+## File            : value_compare_engine_slave.magik
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworldwide.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614319
+##                   fax     : +31(0)345 614406
+##
+## Contains        : 
+##
+##
+## Date written    : Mar/2009
+## Date changed    : Apr/2009
+##
+## `Source contents (Starts with evt. Shared Cons/vars, Automatically maintained):'
+##
+## '|Class Defs|:`
+##                  value_compare_engine_slave
+## '|Methods (Public)|:`
+##                  value_compare_engine_slave.run()
+##                  value_compare_engine_slave.compare_value()
+## `Source Code'
+#&&
+#
+_package roos_image_compare
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+# Author         : Realworld Systems (FvH); Date: Mar/2009
+## Class Purpose : Compares global values with a remote
+##                 master. Self will respond to the master.
+## Revision      : 
+def_slotted_exemplar(:value_compare_engine_slave,
+		     {},
+		     :value_compare_engine_base)
+$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method value_compare_engine_slave.run(p_all_globals)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_ALL_GLOBALS: equality_hash_table
+	## Returns       : boolean, string
+	## Function      : Compare the global as given by the master.
+	##                 Answers if the global was available and what
+	##                 the required name was
+	## Revision      : 
+	l_name << .connection.input.roos_get_chars16()
+	l_available? << p_all_globals.includes_key?(l_name)
+	l_global << p_all_globals[l_name]
+	_if l_available?
+	_then
+		.connection.output.roos_put_boolean(_true)
+		_self.compare_value(l_global)
+	_else
+		.connection.output.roos_put_boolean(_false)
+	_endif
+	_return l_available?, l_name, l_global
+_endmethod
+$
+
+#_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+#_private _method value_compare_engine_slave.get_exemplar_from_name(p_string)
+#	# Author         : Realworld Systems (FvH); Date: Mar/2009
+#	## Parameters    : P_STRING: string
+#	## Returns       : exemplar
+#	## Function      : Return the exemplar for the qualified
+#	##                 name. Answer if the given string is a global
+#	##                 value. Assumes that the string name is in
+#	##                 the form package:class_name. 
+#	## Revision      :
+#	l_index << p_string.index_of(%:)
+#	l_package_name << p_string.slice(1,l_index-1).as_symbol()
+#	l_class_name << p_string.slice_to_end(l_index+1).as_symbol()
+#	
+#	l_package << package(l_package_name)
+#	l_has? << l_package.includes_key?(l_class_name)
+#	_return l_package[l_class_name], l_has?
+#_endmethod
+#$
+
+_pragma(classify_level=restricted, topic={roos,roos_image_compare})
+_method value_compare_engine_slave.compare_value(p_value)
+	# Author         : Realworld Systems (FvH); Date: Mar/2009
+	## Parameters    : P_VALUE
+	## Returns       : boolean
+	## Function      : Read the value from the master and compare
+	##                 it with out value.
+	##                 Answers if it was the same.
+	## Revision      :
+	l_master_string << .connection.input.roos_get_chars16()
+	l_string << _super.stringify_value(p_value)
+	l_same? << l_string = l_master_string
+	.connection.output.roos_put_boolean(l_same?)
+	_return l_same?
+_endmethod
+$
+
