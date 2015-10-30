@@ -1,0 +1,21 @@
+_package user
+$
+
+
+_pragma(classify_level=restricted)
+_method smallworld_product.layered_product_with_external_name(p_name)
+	## Return the product that has the external name P_NAME in the
+	## layered product. Confusing enough that does not have to be
+	## name of the actual product.
+	##
+	_local dir << _self.get_path_from_layered_product_data(p_name)
+	dir << system.canonicalise(dir)
+	_for i_prod _over _self.products.fast_elements()
+	_loop
+		_if i_prod.directory = dir
+		_then
+			_return i_prod
+		_endif 
+	_endloop
+_endmethod
+$

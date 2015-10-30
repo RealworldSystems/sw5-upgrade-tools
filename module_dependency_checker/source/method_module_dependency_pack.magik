@@ -1,0 +1,122 @@
+_package user
+$
+
+_pragma(classify_level=restricted, topic={modules})
+##
+## Helper class that stores the combination of a method that is
+## using an exampler. Includes the originating module of the
+## method and the example.
+def_slotted_exemplar(:method_module_dependency_pack,
+	
+	{
+		{:exemplar,        _unset, :readable}, # owner of the method
+		{:method,          _unset, :readable}, # the method
+		{:method_module,   _unset, :readable}, # module that defines the method
+		{:method_path,     _unset, :readable}, # sourcefile of the method
+		{:exemplar_in_use, _unset, :readable}, # exemplar used in the method
+		{:exemplar_module, _unset, :readable}  # module of cet exemplar
+	})
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.new(p_exemplar, p_method, p_method_module, p_method_path, p_exemplar_in_use, p_exemplar_module)
+	## 
+	_return _clone.init(p_exemplar, p_method, p_method_module, p_method_path, p_exemplar_in_use, p_exemplar_module)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_private _method method_module_dependency_pack.init(p_exemplar, p_method, p_method_module, p_method_path, p_exemplar_in_use, p_exemplar_module)
+	##
+	.exemplar << p_exemplar
+	.method   << p_method
+	.method_module << p_method_module
+	.method_path   << p_method_path
+	.exemplar_in_use << p_exemplar_in_use
+	.exemplar_module << p_exemplar_module
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.method_product
+	_return .method_module.product
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.exemplar_product
+	_return .exemplar_module.product
+_endmethod
+$
+
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.module_mismatch?
+	## 
+	_if .method_module _isnt .exemplar_module
+	_then
+		_local prereq << .method_module.prerequisite_modules(_unset,_true,_true)
+		_if _not prereq.includes?(.exemplar_module)
+		_then
+			_return _true
+		_endif
+	_endif
+	_return _false 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.product_mismatch?
+	##
+	_local method_product   << .method_module.product
+	_local exemplar_product << .exemplar_module.product
+	_if method_product _isnt exemplar_product
+	_then
+		prereq << method_product.prerequisite_products(_unset,_true,_true)
+		_if _not prereq.includes?(exemplar_product)
+		_then
+			_return _true
+		_endif
+	_endif
+	_return _false 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.exemplar_name
+	## 
+	_return .exemplar.define_method_class_name
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.exemplar_in_use_name
+	## 
+	_return .exemplar_in_use.define_method_class_name
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.module_file_accessible?
+	## 
+	_return system.file_exists?(.method_module.safe_full_directory)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.product_file_accessible?
+	## 
+	_return system.file_exists?(_self.method_product.directory)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={modules})
+_method method_module_dependency_pack.full_method_name
+	## 
+	_return write_string(_self.exemplar_name, ".", .method.name)	
+_endmethod
+$
+
+
+

@@ -1,0 +1,6 @@
+module_dependency_checker	1
+
+description
+	Checks the dependencies of modules and products
+end
+

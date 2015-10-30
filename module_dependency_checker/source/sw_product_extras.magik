@@ -1,0 +1,55 @@
+_package sw
+$
+
+
+
+_pragma(classify_level=restricted)
+_method sw_product.prerequisite_products(_optional products, recurse?, safe?)
+
+	## Find all the products that this product requires, the products
+	## will be added to the PRODUCTS collection as they are found. If no
+	## PRODUCTS collection is passed in then a rope will be created
+	## for them.
+	##
+	## If RECURSE? is true then all the products that the
+	## sub-products require will also be returned.  The deepest
+	## prerequisites will be earlier in the collection (if it is
+	## an ordered collection such as a rope.)
+	##
+	## If safe? is true and a product requires a product which is not
+	## defined then the sw_product_undefined_product warning
+	## condition will be raised instead of an error.
+
+	# Make a rope for the prerequisites products if we don't have one
+	_if (mods << products) _is _unset _then mods << rope.new() _endif 
+
+	# Find the prerequisites and add *their* prerequisites first,
+	# so they end up in the correct order.
+	_for requires_data _over _self.prerequisites.fast_elements()
+	_loop
+		(name, version) << (_scatter requires_data)
+		name << name.as_symbol()
+		product << smallworld_product.layered_product_with_external_name(name)#, version, safe? )
+
+		_if product _is _unset
+		_then 
+			show("**missing product ", name)
+		_elif _not mods.includes?(product)
+		_then			
+			_if recurse? _is _true
+			_then
+				# Recurse! Recurse!
+				product.prerequisite_products(mods, recurse?, safe?)
+			_endif
+
+			# Add the product after its prerequisites have been added, so
+			# that they end up in the correct order
+			mods.add(product)
+		_endif 
+	_endloop
+	
+	>> mods
+_endmethod
+$
+
+

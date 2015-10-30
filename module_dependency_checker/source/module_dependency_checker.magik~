@@ -1,0 +1,216 @@
+_package user
+$
+
+remex(:module_dependency_checker)
+$
+
+_pragma(classify_level=basic, topic={modules})
+##
+## Checks if the dependencies of modules (and products) are
+## according to the sourcecode. If a method is defined on an
+## exemplar, then the module that contains the method should
+## require the modeul where the exemplar is defined. The thing
+## goes for any global variables that are used in methods.
+##
+## Main usage is module_dependency_checker.new().run("*", "*").
+## See method comment for more details.
+##
+def_slotted_exemplar(:module_dependency_checker,
+	##  
+	{
+		{:output, _unset}
+	})
+$
+
+_pragma(classify_level=basic, topic={modules})
+_method module_dependency_checker.new()
+	## Return a new checkers
+	_return _clone 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={modules})
+_method module_dependency_checker.run(p_class_match, p_dir_match, _optional p_filename)
+	##
+	## Runs the check.
+	## Only works for exemplars that match the P_CLASS_MATCH
+	## description. Use "*" for all exemplars. 
+	## Only works for methods that are defines in directories that
+	## match P_DIR_MATCH. Use "*" to get all methods.
+	## The results are written to P_FILENAME. If ommited then the
+	## results are written to the output.
+	##
+	_if p_filename _isnt _unset
+	_then
+		.output << external_text_output_stream.new(p_filename)
+	_endif 
+	_protect
+		_self.do_run(p_class_match, p_dir_match)
+	_protection
+		_if .output _isnt _unset _then .output.close() _endif
+	_endprotect
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={modules})
+_private _method module_dependency_checker.do_run(p_class_match, p_dir_match)
+	_for i_exemplar, i_method, method_module, method_path _over _self.methods(p_class_match, p_dir_match)
+	_loop
+		_for i_exemplar_in_use, exemplar_module _over _self.examplars(i_exemplar, i_method)
+		_loop 
+			_self.validate_dependency(i_exemplar, i_method, method_module, method_path, i_exemplar_in_use, exemplar_module)
+		_endloop 
+	_endloop 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={modules})
+_private _method module_dependency_checker.validate_dependency(i_exemplar, i_method, method_module, method_path, i_exemplar_in_use, exemplar_module)
+	_if method_module _isnt exemplar_module
+	_then
+		_local prereq << method_module.prerequisite_modules(_unset,_true,_true)
+		_if _not prereq.includes?(exemplar_module)
+		_then
+			_self.report(i_exemplar, i_method, method_module, method_path, i_exemplar_in_use, exemplar_module)
+		_endif 
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={modules})
+_private _method module_dependency_checker.report(i_exemplar, i_method, method_module, method_path, i_exemplar_in_use, exemplar_module)
+	
+	_local exemplar_name << i_exemplar.define_method_class_name
+	_local exemplar_in_use_name << i_exemplar_in_use.define_method_class_name
+	_if system.file_exists?(method_module.safe_full_directory)
+	_then
+		_self.write("Module ", method_module, " should require ", exemplar_module, " because the method ",
+			    write_string(exemplar_name, ".", i_method.name),
+		      " is using the exemplar ", exemplar_in_use_name, " in file ", method_path)
+	_endif 
+	
+	_local method_product << method_module.product
+	_local exemplar_product << exemplar_module.product
+	_if method_product _isnt exemplar_product
+	_then
+		prereq << method_product.prerequisite_products(_unset,_true,_true)
+		_if _not prereq.includes?(exemplar_product)
+		_then
+			_if system.file_exists?(method_product.directory)
+			_then
+				_self.write("Product ", method_product, " should require ", exemplar_product, " because the method ",
+					    write_string(exemplar_name, ".", i_method.name),
+				      " is using the exemplar  ", exemplar_in_use_name, " in file ", method_path)
+			_endif 
+		_endif
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={modules})
+_private _method module_dependency_checker.write(_gather p_strings)
+
+	_local output << _if .output _isnt _unset
+			 _then >> .output
+			 _else >> !output!
+			 _endif 
+	_for i_string _over p_strings.fast_elements()
+	_loop
+		output.write(i_string, tab_char)
+	_endloop
+	output.newline()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={modules})
+_private _iter _method module_dependency_checker.methods(p_class_match, p_dir_match)
+	## 
+	##
+	_local _constant methods_to_skip << {:|saved!shallow_copy()|, :|shallow_copy()|}
+	 _for i_name, i_exemplar _over _self.all_exemplars(p_class_match)
+	 _loop
+		 _for i_method _over i_exemplar.define_method_target.local_methods(_true)
+		 _loop
+			 _if methods_to_skip.includes?(i_method.name) _then _continue _endif 
+			 _if _not i_method.value.is_class_of?(procedure) _then _continue _endif 
+			 _if i_method.compiler_info _is _unset _then _continue _endif
+			 
+			 _local method_file << i_method.compiler_info[:source_file]
+			 _if method_file _is _unset _then _continue _endif 
+			 _if method_file.is_class_of?("") _then _continue _endif
+			 _local method_module << method_file.module
+			 _local method_path << method_file.as_charvec()
+			 
+			 _if _not method_path.matches?(p_dir_match) _then _continue _endif 
+			 
+			 _loopbody(i_exemplar, i_method, method_module, method_path)
+		 _endloop
+	 _endloop 
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={modules})
+_private _iter _method module_dependency_checker.examplars(p_exemplar, p_method)
+	_for i_exemplar _over _self.examplars_used_by(p_exemplar, p_method)
+	_loop 
+		_local exemplar_file << i_exemplar.instance_metadata[:source_file]
+		_if exemplar_file _is _unset _then _continue _endif
+		_if exemplar_file.is_class_of?("") _then _continue _endif
+		_local exemplar_module << exemplar_file.module
+		_local exemplar_product << exemplar_module.product
+		_if exemplar_product.name.write_string.matches?("sw_*") _then _continue _endif 
+		
+		_loopbody(i_exemplar, exemplar_module)
+	_endloop 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={modules})
+_private _iter _method module_dependency_checker.examplars_used_by(p_exemplar, p_method)
+	_local done << set.new()
+	
+	done.add(p_exemplar)
+	_loopbody(p_exemplar)
+	_for i_num _over range(0,p_method.value.num_literals-1)
+	_loop
+		_local lit << p_method.value.literal(i_num)
+		_if lit.is_class_of?(global_variable)
+		_then
+			_if _not done.includes?(lit.value)
+			_then 
+				_loopbody(lit.value)
+				done.add(lit.value)
+			_endif 
+		_endif
+	_endloop 
+_endmethod
+$
+
+
+
+_pragma(classify_level=basic, topic={modules})
+_private _iter _method module_dependency_checker.all_exemplars(p_class_match)
+	_for i_package _over !current_package!.all_packages.fast_elements()
+	_loop
+		_for i_name, i_value _over i_package.fast_keys_and_elements()
+		_loop
+			_if i_name.matches?(p_class_match)
+			_then 
+				_if (i_value.exemplar _is i_value) _orif
+				    (i_value.exemplar _is mixin_mixin)
+				_then
+					_local glob << i_value.exemplar_global
+					_if glob _isnt _unset
+					_then 
+						_if glob.package _is i_package
+						_then 
+							_loopbody(i_name, i_value)
+						_endif
+					_endif 
+				_endif
+			_endif 
+		_endloop
+	_endloop 
+_endmethod
+$
