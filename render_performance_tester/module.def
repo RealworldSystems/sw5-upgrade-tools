@@ -1,0 +1,6 @@
+render_performance_tester	1
+
+description
+	Records and replays map rendering to assess performance
+end
+

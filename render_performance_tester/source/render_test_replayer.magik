@@ -1,0 +1,146 @@
+_package user
+$
+
+#remex(:render_test_replayer)
+$
+
+_pragma(classify_level=basic, topic={performance})
+def_slotted_exemplar(:render_test_replayer,
+	{
+		{:in,       _unset},
+		{:map_view, _unset},
+		{:queue,    _unset}
+	})
+$
+
+
+_pragma(classify_level=basic, topic={performance})
+_method render_test_replayer.new()
+	_return _clone.init()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_private _method render_test_replayer.init()
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_method render_test_replayer.start_replay(filename, nr_of_times)
+	_protect
+		_self.attach_to_maps()
+		_self.open_input_stream(filename)
+		_for i _over range(1,nr_of_times)
+		_loop
+			_self.replay_once(i)
+		_endloop 
+	_protection
+		_self.stop_replaying()
+	_endprotect
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_private _method render_test_replayer.stop_replaying()
+	.queue << _unset
+	_self.detach_from_maps()
+	_self.close_input_stream()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_private _method render_test_replayer.replay_once(session_nr)
+	.queue << atomic_queue.new(1)
+	.in.rewind()
+	_local t << system.elapsed_seconds()
+	_loop
+		_local str << .in.get_line()
+		_if str _is _unset _then _leave _endif
+		_local pieces << str.split_by(tab_char)
+		_if pieces.size < 4 _then _continue _endif
+		_local b << bounding_box.new(pieces[1].as_number(),
+					     pieces[3].as_number(),
+					     pieces[2].as_number(),
+					     pieces[4].as_number())
+		_local view_def << .map_view.calculate_view_for_bounds(b)
+		.map_view.set_view(view_def)
+		.queue.get()
+	_endloop
+	_local duration << system.elapsed_seconds() - t
+	.queue << _unset 
+	write("Running session ", session_nr, " took: ", duration, " seconds")
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={performance})
+_private _method render_test_replayer.attach_to_maps()
+	_if smallworld_product.applications.size <> 1
+	_then
+		condition.raise(:error, :string, "There should be exactly one application open")
+	_endif
+	_local app << smallworld_product.applications.an_element()
+	_local c << 0
+	_for i_view _over app.plugin(:maps).active_map_views()
+	_loop
+		c+<< 1
+	_endloop
+	_if c <> 1
+	_then
+		condition.raise(:error, :string, "There should be one active map open to get a fair comparison, there are " + c.write_string)
+	_endif
+	.map_view << app.plugin(:maps).current_map_view
+	.map_view.add_dependent(_self)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_private _method render_test_replayer.detach_from_maps()
+	_if .map_view _isnt _unset 
+	_then
+		.map_view.remove_dependent(_self)
+		.map_view << _unset 
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_private _method render_test_replayer.open_input_stream(filename)
+	.in << external_text_input_stream.new(filename)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_private _method render_test_replayer.close_input_stream()
+	_if .in _isnt _unset
+	_then 
+		.in.close()
+		.in << _unset
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_method render_test_replayer.note_change(who, what, _optional extra)
+	_if who _is .map_view _andif
+	    what _is :post_render
+	_then
+		_self.process_post_render(who, extra)
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={performance})
+_private _method render_test_replayer.process_post_render(map_view, extra)
+	_if extra <> :complete
+	_then
+		write("Ignoring incomplete render")
+	_else
+		_if .queue _isnt _unset
+		_then
+			.queue.put(:complete, _true)
+		_endif 
+	_endif 
+_endmethod
+$
